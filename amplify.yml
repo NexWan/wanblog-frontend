@@ -5,7 +5,7 @@ backend:
       commands:
         - npm install -g bun
         - bun install
-        - bunx ampx generate outputs --branch main --app-id d2x2q216xa9tje
+        - npm_config_user_agent=npm bunx ampx generate outputs --branch main --app-id d2x2q216xa9tje
 frontend:
   phases:
     build:
