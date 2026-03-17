@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+amplify_outputs_dev.json
 
 # next.js
 /.next/
