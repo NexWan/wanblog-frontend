@@ -4,6 +4,7 @@
     "": {
       "name": "wanblog-frontend",
       "dependencies": {
+        "@aws-amplify/adapter-nextjs": "^1.7.2",
         "@aws-amplify/backend-cli": "^1.8.2",
         "@aws-amplify/ui-react": "^6.15.2",
         "aws-amplify": "^6.16.3",
@@ -33,6 +34,8 @@
     "@ardatan/aggregate-error": ["@ardatan/aggregate-error@0.0.6", "", { "dependencies": { "tslib": "~2.0.1" } }, "sha512-vyrkEHG1jrukmzTPtyWB4NLPauUw5bQeg4uhn8f+1SSynmrOcyvlb1GKQjjgoBzElLdfXCRYX8UnBlhklOHYRQ=="],
 
     "@ardatan/relay-compiler": ["@ardatan/relay-compiler@12.0.0", "", { "dependencies": { "@babel/core": "^7.14.0", "@babel/generator": "^7.14.0", "@babel/parser": "^7.14.0", "@babel/runtime": "^7.0.0", "@babel/traverse": "^7.14.0", "@babel/types": "^7.0.0", "babel-preset-fbjs": "^3.4.0", "chalk": "^4.0.0", "fb-watchman": "^2.0.0", "fbjs": "^3.0.0", "glob": "^7.1.1", "immutable": "~3.7.6", "invariant": "^2.2.4", "nullthrows": "^1.1.1", "relay-runtime": "12.0.0", "signedsource": "^1.0.0", "yargs": "^15.3.1" }, "peerDependencies": { "graphql": "*" }, "bin": { "relay-compiler": "bin/relay-compiler" } }, "sha512-9anThAaj1dQr6IGmzBMcfzOQKTa5artjuPmw8NYK/fiGEMjADbSguBY2FMDykt+QhilR3wc9VA/3yVju7JHg7Q=="],
+
+    "@aws-amplify/adapter-nextjs": ["@aws-amplify/adapter-nextjs@1.7.2", "", { "dependencies": { "aws-jwt-verify": "^4.0.1" }, "peerDependencies": { "aws-amplify": "^6.16.1", "next": ">=13.5.0 <17.0.0" } }, "sha512-qzj0s0tdN6XsFJrtHAcUMBmITctLxAFCZ0K4/toquuHAcNDMrchKAF94smMnJCOw7hdWTSR6yE9sO82vwj5yIw=="],
 
     "@aws-amplify/analytics": ["@aws-amplify/analytics@7.0.93", "", { "dependencies": { "@aws-sdk/client-firehose": "3.982.0", "@aws-sdk/client-kinesis": "3.982.0", "@aws-sdk/client-personalize-events": "3.982.0", "@smithy/util-utf8": "2.0.0", "tslib": "^2.5.0" }, "peerDependencies": { "@aws-amplify/core": "^6.1.0" } }, "sha512-3WoB0VzATJyupTNQ+ZnzE0pLYnpZPtqNN4deZ8gadG5uzGhhvkt9uZtgVnn/QFGb35DnP8qNDTRiM0rL3vjyZQ=="],
 
@@ -1011,6 +1014,8 @@
     "aws-amplify": ["aws-amplify@6.16.3", "", { "dependencies": { "@aws-amplify/analytics": "7.0.93", "@aws-amplify/api": "6.3.24", "@aws-amplify/auth": "6.19.1", "@aws-amplify/core": "6.16.1", "@aws-amplify/datastore": "5.1.5", "@aws-amplify/notifications": "2.0.93", "@aws-amplify/storage": "6.13.2", "tslib": "^2.5.0" } }, "sha512-yWuvctncVzSI5K40k2LiZTTKu6p1O7YpbmFfbM9luAFssUj2P2DmgJgs2IQ0ArpJTi++QrAT5L4F60qxTpGTIA=="],
 
     "aws-cdk-lib": ["aws-cdk-lib@2.243.0", "", { "dependencies": { "@aws-cdk/asset-awscli-v1": "2.2.263", "@aws-cdk/asset-node-proxy-agent-v6": "^2.1.1", "@aws-cdk/cloud-assembly-api": "^2.1.1", "@aws-cdk/cloud-assembly-schema": "^52.1.0", "@balena/dockerignore": "^1.0.2", "case": "1.6.3", "fs-extra": "^11.3.3", "ignore": "^5.3.2", "jsonschema": "^1.5.0", "mime-types": "^2.1.35", "minimatch": "^10.2.3", "punycode": "^2.3.1", "semver": "^7.7.4", "table": "^6.9.0", "yaml": "1.10.2" }, "peerDependencies": { "constructs": "^10.5.0" } }, "sha512-qIhg/3gSNeZ9LoVmDATO45HPk+POkoCfPZRezeOPhd2kAJ/wzYswyUcMqpDWXrlRrEVYntxsykQs+2eMA04Isg=="],
+
+    "aws-jwt-verify": ["aws-jwt-verify@4.0.1", "", {}, "sha512-kzvi71eD3w/mCpYRUY7cz6DX4bfYihGdI2yV3FYQ2JuZZenqAqDPz0gWj0ew6vlAtdEVBNb7p+Dm2TAIxpVYMA=="],
 
     "axe-core": ["axe-core@4.11.1", "", {}, "sha512-BASOg+YwO2C+346x3LZOeoovTIoTrRqEsqMa6fmfAV0P+U9mFr9NsyOEpiYvFjbc64NMrSswhV50WdXzdb/Z5A=="],
 
