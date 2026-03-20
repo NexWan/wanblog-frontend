@@ -6,12 +6,16 @@ import { runWithAmplifyServerContext } from "@/lib/amplifyServerUtils";
 type GroupClaim = string[] | undefined;
 
 export async function getCurrentUserGroups() {
-  const session = await runWithAmplifyServerContext({
-    nextServerContext: { cookies },
-    operation: (contextSpec) => fetchAuthSession(contextSpec),
-  });
+  try {
+    const session = await runWithAmplifyServerContext({
+      nextServerContext: { cookies },
+      operation: (contextSpec) => fetchAuthSession(contextSpec),
+    });
 
-  return (session.tokens?.accessToken.payload["cognito:groups"] as GroupClaim) ?? [];
+    return (session.tokens?.accessToken.payload["cognito:groups"] as GroupClaim) ?? [];
+  } catch {
+    return [];
+  }
 }
 
 export async function isCurrentUserAdmin() {
