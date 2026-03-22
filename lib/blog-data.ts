@@ -1,12 +1,28 @@
 import { generateClient } from "aws-amplify/data";
-import type { Schema } from "../../wanblog-backend/amplify/data/resource";
+import type { Blog, BlogStatus, CreateBlogInput, DeleteBlogInput } from "@/lib/blog-types";
 
-export type Blog = Schema["Blog"]["type"];
-export type BlogStatus = Blog["status"];
-export type CreateBlogInput = Schema["Blog"]["createType"];
-export type DeleteBlogInput = Schema["Blog"]["identifier"];
+export type { Blog, BlogStatus, CreateBlogInput, DeleteBlogInput };
 
-const client = generateClient<Schema>();
+type BlogClient = {
+  models: {
+    Blog: {
+      create: (
+        input: CreateBlogInput | Blog,
+        options: { authMode: "userPool" }
+      ) => Promise<{ data: Blog | null; errors?: { message: string }[] }>;
+      update: (
+        input: Partial<CreateBlogInput> & { blogId: string },
+        options: { authMode: "userPool" }
+      ) => Promise<{ data: Blog | null; errors?: { message: string }[] }>;
+      delete: (
+        input: DeleteBlogInput,
+        options: { authMode: "userPool" }
+      ) => Promise<{ data: DeleteBlogInput | null; errors?: { message: string }[] }>;
+    };
+  };
+};
+
+const client = generateClient() as unknown as BlogClient;
 
 export async function postBlog(blog: Blog) {
   const { data, errors } = await client.models.Blog.create({
@@ -15,7 +31,7 @@ export async function postBlog(blog: Blog) {
     authMode: "userPool",
   });
 
-  return { data, errors };
+  return { data: data as Blog | null, errors };
 }
 
 export async function updateBlog(blogId: string, updates: Partial<CreateBlogInput>) {
@@ -27,10 +43,10 @@ export async function updateBlog(blogId: string, updates: Partial<CreateBlogInpu
   });
 
   if (errors?.length) {
-    throw new Error(errors.map((error) => error.message).join(", "));
+    throw new Error(errors.map((error: { message: string }) => error.message).join(", "));
   }
 
-  return { data, errors };
+  return { data: data as Blog | null, errors };
 }
 
 export async function createBlog(blog: CreateBlogInput) {
@@ -39,10 +55,10 @@ export async function createBlog(blog: CreateBlogInput) {
   });
 
   if (errors?.length) {
-    throw new Error(errors.map((error) => error.message).join(", "));
+    throw new Error(errors.map((error: { message: string }) => error.message).join(", "));
   }
 
-  return data;
+  return data as Blog | null;
 }
 
 export async function deleteBlog(blog: DeleteBlogInput) {
@@ -51,8 +67,8 @@ export async function deleteBlog(blog: DeleteBlogInput) {
   });
 
   if (errors?.length) {
-    throw new Error(errors.map((error) => error.message).join(", "));
+    throw new Error(errors.map((error: { message: string }) => error.message).join(", "));
   }
 
-  return data;
+  return data as DeleteBlogInput | null;
 }

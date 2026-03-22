@@ -3,16 +3,33 @@ import "server-only";
 import { cookies } from "next/headers";
 import { generateServerClientUsingCookies } from "@aws-amplify/adapter-nextjs/api";
 import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
-import type { Schema } from "../../wanblog-backend/amplify/data/resource";
-
-type Blog = Schema["Blog"]["type"];
+import type { Blog } from "@/lib/blog-types";
 
 const outputs = getServerAmplifyOutputs();
 
-const serverClient = generateServerClientUsingCookies<Schema>({
+type BlogServerClient = {
+  models: {
+    Blog: {
+      list: (options: { authMode: "iam" | "userPool" }) => Promise<{
+        data: Blog[];
+        errors?: { message: string }[];
+      }>;
+      listBlogsBySlug: (
+        input: { slug: string },
+        options: { authMode: "iam" | "userPool" }
+      ) => Promise<{ data: Blog[]; errors?: { message: string }[] }>;
+      get: (
+        input: { blogId: string },
+        options: { authMode: "userPool" }
+      ) => Promise<{ data: Blog | Blog[] | null; errors?: { message: string }[] }>;
+    };
+  };
+};
+
+const serverClient = generateServerClientUsingCookies({
   config: outputs,
   cookies,
-});
+}) as unknown as BlogServerClient;
 
 async function assertNoErrors(
   errors: { message: string }[] | undefined,
@@ -29,7 +46,7 @@ export async function listBlogsPublic() {
 
   await assertNoErrors(errors);
 
-  return data;
+  return data as Blog[];
 }
 
 export async function listBlogsForAdmin() {
@@ -39,7 +56,7 @@ export async function listBlogsForAdmin() {
 
   await assertNoErrors(errors);
 
-  return data;
+  return data as Blog[];
 }
 
 export async function getBlogBySlugPublic(slug: string) {
@@ -52,7 +69,7 @@ export async function getBlogBySlugPublic(slug: string) {
 
   await assertNoErrors(errors);
 
-  return data[0] ?? null;
+  return (data[0] as Blog | undefined) ?? null;
 }
 
 export async function getBlogBySlugForAdmin(slug: string) {
@@ -65,7 +82,7 @@ export async function getBlogBySlugForAdmin(slug: string) {
 
   await assertNoErrors(errors);
 
-  return data[0] ?? null;
+  return (data[0] as Blog | undefined) ?? null;
 }
 
 export async function getBlogByIdForAdmin(blogId: string): Promise<Blog | null> {
