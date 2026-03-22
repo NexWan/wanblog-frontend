@@ -1,6 +1,8 @@
 import { requireAdmin } from "@/lib/auth";
 import BlogEditorShell from "@/components/blog/BlogEditorShell";
-import { placeholderBlogs, placeholderMarkdown } from "@/lib/blog-skeleton";
+import { placeholderMarkdown } from "@/lib/blog-skeleton";
+import { getBlogByIdForAdmin } from "@/lib/blog-data.server";
+import { getMarkdownContentServer } from "@/lib/blog-storage.server";
 
 type EditBlogPageProps = {
   params: Promise<{
@@ -11,7 +13,25 @@ type EditBlogPageProps = {
 export default async function EditBlogPage({ params }: EditBlogPageProps) {
   await requireAdmin();
   const { id } = await params;
-  const blog = placeholderBlogs.find((entry) => entry.blogId === id) ?? placeholderBlogs[0];
+  const blog = await getBlogByIdForAdmin(id);
+
+  if (!blog) {
+    return (
+      <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-14 text-zinc-900">
+        <div className="mx-auto flex max-w-4xl flex-col gap-8">
+          <section className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
+            <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Blog not found</p>
+            <h1 className="mt-3 text-4xl font-semibold tracking-tight">This blog could not be loaded</h1>
+            <p className="mt-4 text-sm leading-7 text-zinc-600">
+              We could not find a blog with that ID.
+            </p>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  const markdownContent = await getMarkdownContentServer(blog.contentPath);
 
   return (
     <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-14 text-zinc-900">
@@ -30,8 +50,8 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
           initialBlogId={blog.blogId}
           initialTitle={blog.title}
           initialSlug={blog.slug}
-          initialTags={blog.tags}
-          initialMarkdown={placeholderMarkdown}
+          initialTags={(blog.tags ?? []).filter((tag): tag is string => Boolean(tag))}
+          initialMarkdown={markdownContent}
         />
       </div>
     </main>

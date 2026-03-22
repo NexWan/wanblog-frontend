@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import TagList from "@/components/blog/TagList";
-import { listBlogs } from "@/lib/blog-data.server";
+import { listBlogsForAdmin } from "@/lib/blog-data.server";
 
 export default async function AdminBlogsPage() {
   await requireAdmin();
 
-  const blogs = await listBlogs();
+  const blogs = await listBlogsForAdmin();
 
   console.log("AdminBlogsPage blogs", blogs);
 
