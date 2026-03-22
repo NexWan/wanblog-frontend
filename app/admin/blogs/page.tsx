@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import TagList from "@/components/blog/TagList";
-import { placeholderBlogs } from "@/lib/blog-skeleton";
 import { listBlogs } from "@/lib/blog-data.server";
 
 export default async function AdminBlogsPage() {
@@ -47,7 +46,7 @@ export default async function AdminBlogsPage() {
                     <h2 className="mt-2 text-2xl font-semibold text-zinc-900">{blog.title}</h2>
                   </div>
 
-                  <TagList tags={blog.tags} />
+                  <TagList tags={(blog.tags ?? []).filter((tag): tag is string => Boolean(tag))} />
 
                   <div className="space-y-1 text-sm text-zinc-600">
                     <p>blogId: {blog.blogId}</p>
