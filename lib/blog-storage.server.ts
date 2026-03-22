@@ -3,18 +3,10 @@ import "server-only";
 import { cookies } from "next/headers";
 import { getUrl } from "aws-amplify/storage/server";
 import { runWithAmplifyServerContext } from "@/lib/amplifyServerUtils";
-import prodOutputs from "@/amplify_outputs.json";
-import devOutputs from "@/amplify_outputs_dev.json";
+import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
+import { getAmplifyStorageConfig } from "@/lib/amplify-outputs.shared";
 
-const outputs =
-  process.env.NEXT_PUBLIC_ENV === "development" ? devOutputs : prodOutputs;
-
-const storageConfig = (outputs as {
-  storage: {
-    bucket_name: string;
-    aws_region: string;
-  };
-}).storage;
+const storageConfig = getAmplifyStorageConfig(getServerAmplifyOutputs());
 
 const BLOG_STORAGE_BUCKET = {
   bucketName: storageConfig.bucket_name,

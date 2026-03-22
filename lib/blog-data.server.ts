@@ -2,12 +2,10 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { generateServerClientUsingCookies } from "@aws-amplify/adapter-nextjs/api";
-import prodOutputs from "@/amplify_outputs.json";
-import devOutputs from "@/amplify_outputs_dev.json";
+import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
 import type { Schema } from "../../wanblog-backend/amplify/data/resource";
 
-const outputs =
-  process.env.NEXT_PUBLIC_ENV === "development" ? devOutputs : prodOutputs;
+const outputs = getServerAmplifyOutputs();
 
 const serverClient = generateServerClientUsingCookies<Schema>({
   config: outputs,

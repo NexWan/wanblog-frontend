@@ -4,6 +4,7 @@ import "./globals.css";
 import ConfigureAmplifyClientSide from "@/components/ConfigureAmplify";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
 
 const themeScript = `
   (() => {
@@ -28,13 +29,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const amplifyOutputs = getServerAmplifyOutputs();
+  const amplifyOutputsScript = `window.__WANBLOG_AMPLIFY_OUTPUTS__ = ${JSON.stringify(amplifyOutputs)};`;
+
   return (
     <html lang="en" data-theme="wanblog-dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: amplifyOutputsScript }} />
       </head>
       <body className="antialiased font-body">
-        <ConfigureAmplifyClientSide />
+        <ConfigureAmplifyClientSide outputs={amplifyOutputs} />
         <Header />
         <div className="pt-24 min-h-[calc(100vh-80px)]">
           {children}

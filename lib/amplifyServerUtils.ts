@@ -1,9 +1,7 @@
 import { createServerRunner } from "@aws-amplify/adapter-nextjs";
-import prodOutputs from "@/amplify_outputs.json";
-import devOutputs from "@/amplify_outputs_dev.json";
+import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
 
-const outputs =
-  process.env.NEXT_PUBLIC_ENV === "development" ? devOutputs : prodOutputs;
+const outputs = getServerAmplifyOutputs();
 
 export const { runWithAmplifyServerContext } = createServerRunner({
   config: outputs,

@@ -1,16 +1,12 @@
-import TagList from "@/components/blog/TagList";
 import PostCard from "@/components/PostCard";
 import { isCurrentUserAdmin } from "@/lib/auth";
 import { listBlogsForAdmin, listBlogsPublic } from "@/lib/blog-data.server";
-import { placeholderBlogs } from "@/lib/blog-skeleton";
 
-const isAdmin = await isCurrentUserAdmin();
+export default async function BlogIndexPage() {
+  const isAdmin = await isCurrentUserAdmin();
+  const blogs = isAdmin ? await listBlogsForAdmin() : await listBlogsPublic();
+  const publishedBlogs = blogs.filter((blog) => isAdmin || blog.status === "PUBLISHED");
 
-const blogs = isAdmin ? await listBlogsForAdmin() : await listBlogsPublic();
-
-const publishedBlogs = blogs.filter((blog) => isAdmin || blog.status === "PUBLISHED");
-
-export default function BlogIndexPage() {
   return (
     <main className="px-6 max-w-7xl mx-auto mb-20">
       <div className="flex items-center justify-between mb-12 mt-12">

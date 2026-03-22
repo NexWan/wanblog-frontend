@@ -1,13 +1,19 @@
 "use client";
 
 import { Amplify } from "aws-amplify";
-import prodOutputs from "@/amplify_outputs.json";
-import devOutputs from "@/amplify_outputs_dev.json";
+import type { AmplifyOutputs } from "@/lib/amplify-outputs.shared";
 
-const outputs = process.env.NEXT_PUBLIC_ENV == 'development' ? devOutputs : prodOutputs;
+let hasConfiguredAmplify = false;
 
-Amplify.configure(outputs, { ssr: true });
+export default function ConfigureAmplifyClientSide({
+  outputs,
+}: {
+  outputs: AmplifyOutputs;
+}) {
+  if (!hasConfiguredAmplify) {
+    Amplify.configure(outputs, { ssr: true });
+    hasConfiguredAmplify = true;
+  }
 
-export default function ConfigureAmplifyClientSide() {
   return null;
 }
