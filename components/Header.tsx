@@ -205,7 +205,7 @@ export default function Header() {
               {link.name}
             </Link>
           ))}
-          <div className="ml-4 flex items-center gap-3">
+          <div className="ml-3 flex items-center gap-3">
             <Avatar avatarUrl={authState.avatarUrl} displayName={authState.displayName} />
             {authState.isAuthenticated ? (
               <button
@@ -233,7 +233,7 @@ export default function Header() {
               </Link>
             )}
           </div>
-          <ThemeToggle className="ml-4" />
+          <ThemeToggle className="ml-2" />
         </div>
 
         {/* Mobile Toggle */}

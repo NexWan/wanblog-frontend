@@ -1,5 +1,6 @@
 "use client";
 
+import { BulbFilled, BulbOutlined } from "@ant-design/icons";
 import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
@@ -81,21 +82,45 @@ export default function ThemeToggle({
       aria-label={`Switch to ${isLightTheme ? "dark" : "light"} theme`}
       aria-pressed={isLightTheme}
       className={cn(
-        "group relative inline-flex items-center gap-3 rounded-full border border-outline-variant/40 bg-surface-container-low/70 text-on-surface transition-all hover:border-primary/40 hover:bg-surface-container-high/80",
-        compact ? "min-h-11 w-full justify-between px-4 py-3" : "min-h-10 w-[11rem] justify-between px-3 py-2",
+        "group relative inline-flex items-center rounded-full border border-outline-variant/40 bg-surface-container-low/70 text-on-surface transition-all hover:border-primary/40 hover:bg-surface-container-high/80",
+        compact ? "h-10 w-[4.75rem] justify-start px-1.5 py-1" : "h-10 w-[4.75rem] justify-start px-1.5 py-1",
         className,
       )}
     >
-      <span className="min-w-[4.5rem] font-label text-[11px] uppercase leading-none tracking-[0.24em] text-center text-primary">
-        {isLightTheme ? "Light" : "Dark"}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute flex items-center text-primary/55 transition-opacity duration-300",
+          "left-3",
+          isLightTheme ? "opacity-100" : "opacity-45",
+        )}
+      >
+        <BulbOutlined className="text-sm" />
       </span>
-      <span className="relative flex h-6 w-11 items-center rounded-full bg-surface-container-highest p-1 transition-colors">
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute flex items-center text-primary/75 transition-opacity duration-300",
+          "right-3",
+          isLightTheme ? "opacity-45" : "opacity-100",
+        )}
+      >
+        <BulbFilled className="text-sm" />
+      </span>
+      <span className="relative flex h-full w-full items-center rounded-full bg-surface-container-highest p-1 transition-colors">
         <span
           className={cn(
-            "h-4 w-4 rounded-full primary-gradient shadow-md transition-transform duration-300",
-            isLightTheme ? "translate-x-5" : "translate-x-0",
+            "flex items-center justify-center rounded-full primary-gradient text-on-primary shadow-md transition-transform duration-300",
+            "h-6 w-6",
+            isLightTheme ? "translate-x-0" : "translate-x-[2rem]",
           )}
-        />
+        >
+          {isLightTheme ? (
+            <BulbOutlined className="text-xs" />
+          ) : (
+            <BulbFilled className="text-xs" />
+          )}
+        </span>
       </span>
     </button>
   );
