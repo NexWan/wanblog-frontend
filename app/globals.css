@@ -1,26 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&family=Manrope:wght@200..800&family=Space+Grotesk:wght@300..700&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-headline: "Epilogue", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-label: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
+
+  --color-surface-dim: #0b0e18;
+  --color-on-surface: #ececfd;
+  --color-on-surface-variant: #a9aab9;
+  --color-primary: #ff85c9;
+  --color-primary-container: #f672be;
+  --color-on-primary: #5e0041;
+  --color-secondary: #c197fe;
+  --color-tertiary: #b8ffbb;
+  --color-tertiary-container: #005d23;
+  --color-on-tertiary: #ffffff;
+  --color-surface-container: #161926;
+  --color-surface-container-low: #10131f;
+  --color-surface-container-high: #1c1f2e;
+  --color-surface-container-highest: #222535;
+  --color-surface-bright: #282b3d;
+  --color-outline-variant: #454754;
+  --color-error: #ff6e84;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-surface-dim text-on-surface font-body selection:bg-primary/30 selection:text-primary;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.glass-nav {
+  background: rgba(11, 14, 24, 0.6);
+  backdrop-filter: blur(20px);
+}
+
+.primary-gradient {
+  background: linear-gradient(135deg, #ff85c9 0%, #f672be 100%);
+}
+
+.editorial-shadow {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Custom prose overrides for the editorial look */
+.prose-editorial {
+  @apply text-on-surface/90 leading-relaxed;
+}
+
+.prose-editorial h2 {
+  @apply font-headline text-3xl font-bold text-primary mt-12 mb-4 tracking-tight;
+}
+
+.prose-editorial p {
+  @apply mb-6;
+}
+
+.prose-editorial blockquote {
+  @apply relative py-10 px-8 my-12 bg-surface-container-low rounded-xl border-l-4 border-primary italic font-headline text-2xl font-medium text-on-surface;
 }

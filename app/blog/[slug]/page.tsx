@@ -13,63 +13,84 @@ type BlogDetailPageProps = {
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   const { slug } = await params;
   const isAdmin = await isCurrentUserAdmin();
-  console.log("BlogDetailPage slug", slug, "isAdmin", isAdmin);
   const blog = isAdmin
     ? await getBlogBySlugForAdmin(slug)
     : await getBlogBySlugPublic(slug);
 
   if (!blog) {
     return (
-      <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-14 text-zinc-900">
-        <div className="mx-auto flex max-w-4xl flex-col gap-8">
-          <section className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Blog not found</p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight">This blog post does not exist</h1>
-            <p className="mt-4 text-sm leading-7 text-zinc-600">
-              We could not find a blog post for this slug.
-            </p>
-          </section>
-        </div>
+      <main className="pt-32 pb-20 text-center text-on-surface">
+        <h1 className="text-4xl font-headline font-bold mb-4">Post not found</h1>
+        <p className="text-on-surface-variant font-body mb-8">This blog post does not exist.</p>
       </main>
     );
   }
 
   if (blog.status !== "PUBLISHED" && !isAdmin) {
     return (
-      <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-14 text-zinc-900">
-        <div className="mx-auto flex max-w-4xl flex-col gap-8">
-          <section className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Blog not found</p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight">This blog post is not available</h1>
-            <p className="mt-4 text-sm leading-7 text-zinc-600">
-              The blog post you are looking for is either unpublished or does not exist.
-            </p>
-          </section>
-        </div>
+      <main className="pt-32 pb-20 text-center text-on-surface">
+        <h1 className="text-4xl font-headline font-bold mb-4">Post unavailable</h1>
+        <p className="text-on-surface-variant font-body mb-8">This blog post is unpublished or does not exist.</p>
       </main>
     );
   }
 
   const markdownContent = await getMarkdownContentServer(blog.contentPath);
+  const words = blog.title.split(' ');
+  const date = blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString() : 'Draft';
+  const tag = (blog.tags && blog.tags.length > 0) ? blog.tags[0] : 'Blog';
 
   return (
-    <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-14 text-zinc-900">
-      <div className="mx-auto flex max-w-4xl flex-col gap-8">
-        <section className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Blog detail shell</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight">{blog.title}</h1>
-          <div className="mt-4 flex flex-wrap gap-3 text-sm text-zinc-600">
-            <span>Author: {blog.authorName}</span>
-            <span>Status: {blog.status}</span>
-            <span>Slug: {blog.slug}</span>
-          </div>
-          <div className="mt-5">
-            <TagList tags={(blog.tags ?? []).filter((tag): tag is string => Boolean(tag))} />
-          </div>
-        </section>
+    <main className="pb-20">
+      <header className="max-w-5xl mx-auto px-6 mb-16 pt-8">
+        <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden mb-12 editorial-shadow bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+           <span className="font-headline tracking-widest uppercase">No cover image available</span>
+        </div>
 
+        <div className="max-w-3xl mx-auto">
+          <div className="inline-block bg-tertiary/10 text-tertiary px-3 py-1 rounded-full text-xs font-label uppercase tracking-widest mb-6 border border-tertiary/20">
+            {tag}
+          </div>
+          <h1 className="font-headline text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] mb-8 text-on-surface">
+            {words.map((word, i) => 
+               i % 3 === 0 && i !== 0
+                ? <span key={i} className="text-primary italic">{word} </span>
+                : word + ' '
+            )}
+          </h1>
+
+          <div className="flex flex-col md:flex-row items-center gap-6 py-8 border-y border-outline-variant/15">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-surface-container-highest border border-primary/20 flex items-center justify-center overflow-hidden font-headline text-lg text-primary font-bold">
+                {blog.authorName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Written by</p>
+                <p className="font-body font-bold text-primary">{blog.authorName}</p>
+              </div>
+            </div>
+            <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
+            <div>
+              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Published</p>
+              <p className="font-body font-bold text-on-surface">{date}</p>
+            </div>
+             <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
+            <div>
+              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Status</p>
+              <p className="font-body font-bold text-on-surface">{blog.status}</p>
+            </div>
+            <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
+            <div>
+              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Tags</p>
+              <TagList tags={(blog.tags ?? []).filter((t): t is string => Boolean(t))} />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <article className="max-w-3xl mx-auto px-6">
         <MarkdownPreview source={markdownContent} />
-      </div>
+      </article>
     </main>
   );
 }

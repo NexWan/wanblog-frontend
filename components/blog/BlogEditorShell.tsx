@@ -43,7 +43,7 @@ export default function BlogEditorShell({
   const [imageAltText, setImageAltText] = useState("Blog image");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [statusMessage, setStatusMessage] = useState(
-    "Draft assets will be written to S3 under the drafts prefix.",
+    "Draft assets will be written to S3 under the drafts prefix."
   );
   const [draftContentPath, setDraftContentPath] = useState<string | null>(initialContentPath ?? null);
   const [publishedContentPath, setPublishedContentPath] = useState<string | null>(null);
@@ -164,7 +164,7 @@ export default function BlogEditorShell({
         setStatusMessage(
           isEditingExistingBlog
             ? `Blog record updated for ${authorName}.`
-            : `Blog record saved for ${authorName}. Stored authorName plus authorUserId for future ownership and profile lookups.`,
+            : `Blog record saved for ${authorName}. Stored authorName plus authorUserId for future ownership and profile lookups.`
         );
       });
     } catch (error) {
@@ -202,7 +202,7 @@ export default function BlogEditorShell({
         });
         setSelectedImage(null);
         setStatusMessage(
-          `Image uploaded to ${result.path}. The markdown now stores an Amplify path reference.`,
+          `Image uploaded to ${result.path}. The markdown now stores an Amplify path reference.`
         );
       });
       await refreshExistingImages(blogId);
@@ -230,7 +230,7 @@ export default function BlogEditorShell({
       startTransition(() => {
         setDraftContentPath(result.path);
         setStatusMessage(
-          `Draft markdown uploaded to ${result.path}. Next step: write or update the Blog record with this contentPath.`,
+          `Draft markdown uploaded to ${result.path}. Next step: write or update the Blog record with this contentPath.`
         );
       });
     } catch (error) {
@@ -254,7 +254,7 @@ export default function BlogEditorShell({
       startTransition(() => {
         setPublishedContentPath(result.contentPath);
         setStatusMessage(
-          `Published assets prepared under blogs/${blogId}/... and the markdown now points at published media paths.`,
+          `Published assets prepared under blogs/${blogId}/... and the markdown now points at published media paths.`
         );
       });
     } catch (error) {
@@ -265,205 +265,197 @@ export default function BlogEditorShell({
   }
 
   return (
-    <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm text-zinc-700">
-              <span className="font-medium text-zinc-900">Title</span>
-              <input
+    <div className="flex flex-col lg:flex-row min-h-[800px] border border-outline-variant/15 rounded-2xl overflow-hidden shadow-2xl editorial-shadow bg-surface-dim mt-8">
+      {/* Left Side: Form & Editor */}
+      <div className="w-full lg:w-1/2 overflow-y-auto border-r border-outline-variant/15 p-8 space-y-10 custom-scrollbar">
+        {/* Metadata Section */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-2 text-primary mb-4">
+            <h3 className="font-label text-xs uppercase tracking-[0.2em] font-bold">Core Metadata</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60">Article Title</label>
+              <input 
                 value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                className="rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-zinc-500"
-                placeholder="My next post"
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-surface-container border-none rounded-xl px-4 py-3 text-lg font-headline font-bold text-on-surface focus:ring-1 focus:ring-primary outline-none"
+                placeholder="Enter a compelling headline..."
               />
-            </label>
-
-            <label className="grid gap-2 text-sm text-zinc-700">
-              <span className="font-medium text-zinc-900">Slug</span>
-              <input
-                value={slug}
-                onChange={(event) => setSlug(event.target.value)}
-                className="rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-zinc-500"
-                placeholder="my-next-post"
-              />
-            </label>
-          </div>
-
-          <label className="grid gap-2 text-sm text-zinc-700">
-            <span className="font-medium text-zinc-900">Excerpt</span>
-            <textarea
-              value={excerpt}
-              onChange={(event) => setExcerpt(event.target.value)}
-              className="min-h-24 rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-zinc-500"
-              placeholder="Short summary for list pages and previews"
-            />
-          </label>
-
-          <label className="grid gap-2 text-sm text-zinc-700">
-            <span className="font-medium text-zinc-900">Tags</span>
-            <input
-              value={tags}
-              onChange={(event) => setTags(event.target.value)}
-              className="rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-zinc-500"
-              placeholder="aws, amplify, nextjs"
-            />
-          </label>
-
-          <label className="grid gap-2 text-sm text-zinc-700">
-            <span className="font-medium text-zinc-900">Blog Content</span>
-            <textarea
-              value={markdown}
-              onChange={(event) => setMarkdown(event.target.value)}
-              className="min-h-80 rounded-2xl border border-zinc-300 px-4 py-3 font-mono text-sm outline-none transition focus:border-zinc-500"
-              placeholder={"# Title\n\nWrite here..."}
-            />
-          </label>
-
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-            <div className="grid gap-4 md:grid-cols-[1fr_0.8fr]">
-              <label className="grid gap-2 text-sm text-zinc-700">
-                <span className="font-medium text-zinc-900">Blog image</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => setSelectedImage(event.target.files?.[0] ?? null)}
-                  className="block rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm text-zinc-700">
-                <span className="font-medium text-zinc-900">Alt text</span>
-                <input
-                  value={imageAltText}
-                  onChange={(event) => setImageAltText(event.target.value)}
-                  className="rounded-xl border border-zinc-300 px-4 py-3 outline-none transition focus:border-zinc-500"
-                  placeholder="Describe the image"
-                />
-              </label>
             </div>
 
-            <p className="mt-3 text-sm leading-6 text-zinc-600">
-              Uploading an image inserts markdown like
-              <code className="mx-1 rounded bg-white px-2 py-1 text-xs text-zinc-800">
-                ![alt](amplify://drafts/...)
-              </code>
-              instead of a short-lived presigned URL.
-            </p>
-
-            <div className="mt-5 rounded-2xl border border-zinc-200 bg-white p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-zinc-900">Existing blog images</p>
-                  <p className="text-sm text-zinc-600">
-                    Reuse images already stored for this blog instead of guessing the path.
-                  </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60">URL Slug</label>
+                <div className="flex items-center bg-surface-container rounded-xl px-4 py-3 gap-2">
+                  <input 
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    className="bg-transparent border-none focus:ring-0 text-sm font-body text-on-surface-variant w-full outline-none" 
+                    placeholder="my-next-post"
+                  />
                 </div>
-                {isLoadingImages ? (
-                  <span className="text-xs text-zinc-500">Loading...</span>
-                ) : (
-                  <span className="text-xs text-zinc-500">{existingImages.length} found</span>
-                )}
               </div>
-
-              {existingImages.length ? (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {existingImages.map((image) => (
-                    <article
-                      key={image.path}
-                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-3"
-                    >
-                      {image.url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={image.url}
-                          alt={image.altText}
-                          className="h-40 w-full rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-40 items-center justify-center rounded-lg bg-zinc-200 text-sm text-zinc-500">
-                          Preview unavailable
-                        </div>
-                      )}
-
-                      <div className="mt-3 space-y-2">
-                        <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                          {image.scope}
-                        </p>
-                        <p className="truncate text-sm text-zinc-700">{image.path}</p>
-                        <button
-                          type="button"
-                          onClick={() => handleExistingImageInsert(image)}
-                          className="rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
-                        >
-                          Insert into markdown
-                        </button>
-                      </div>
-                    </article>
-                  ))}
+              <div className="space-y-2">
+                <label className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60">Tags (Comma separated)</label>
+                <div className="flex items-center bg-surface-container rounded-xl px-4 py-3 gap-2">
+                  <input 
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    className="bg-transparent border-none focus:ring-0 text-sm font-body text-on-surface w-full outline-none" 
+                    placeholder="EDITORIAL, THEORY"
+                  />
                 </div>
-              ) : (
-                <p className="mt-4 text-sm text-zinc-600">
-                  No existing images were found for this blog yet.
-                </p>
-              )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60">Excerpt / Meta Description</label>
+              <textarea 
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                className="w-full bg-surface-container border-none rounded-xl px-4 py-3 text-sm font-body text-on-surface-variant focus:ring-1 focus:ring-primary outline-none"
+                rows={2}
+                placeholder="Short summary for list pages..."
+              />
             </div>
           </div>
+        </section>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleImageUpload}
-              disabled={isWorking}
-              className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Upload image to draft media
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDraftSave}
-              disabled={isWorking}
-              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Save draft markdown
-            </button>
-
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={isWorking}
-              className="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Prepare publish assets
-            </button>
-
-            <button
-              type="button"
-              onClick={handleBlogRecordSave}
-              disabled={isWorking || !draftContentPath}
-              className="rounded-full border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-900 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isEditingExistingBlog ? "Update blog record" : "Create blog record"}
-            </button>
+        {/* Media Assets */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-2 text-tertiary mb-4">
+            <h3 className="font-label text-xs uppercase tracking-[0.2em] font-bold">Media Upload</h3>
           </div>
+          <div className="bg-surface-container-low border border-outline-variant/10 rounded-xl p-6">
+             <div className="grid gap-4 md:grid-cols-2 mb-4">
+                <label className="grid gap-2 text-sm text-on-surface-variant">
+                  <span className="font-label text-[10px] uppercase tracking-widest">Select Image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => setSelectedImage(event.target.files?.[0] ?? null)}
+                    className="block rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-xs"
+                  />
+                </label>
+                <label className="grid gap-2 text-sm text-on-surface-variant">
+                  <span className="font-label text-[10px] uppercase tracking-widest">Alt Text</span>
+                  <input
+                    value={imageAltText}
+                    onChange={(event) => setImageAltText(event.target.value)}
+                    className="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-xs outline-none focus:border-primary"
+                    placeholder="Describe the image"
+                  />
+                </label>
+             </div>
+             <button
+                type="button"
+                onClick={handleImageUpload}
+                disabled={isWorking}
+                className="w-full rounded-lg border border-outline-variant/30 px-4 py-2 text-xs font-bold font-label tracking-widest text-on-surface transition hover:bg-surface-bright disabled:opacity-50"
+              >
+                Upload to Draft Media
+              </button>
 
-          <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm leading-6 text-zinc-600">
-            <p className="font-medium text-zinc-900">Current editor session</p>
-            <p className="mt-2">blogId: {blogId}</p>
-            <p>title: {title || "not set"}</p>
-            <p>slug: {slug || "not set"}</p>
-            <p>excerpt: {excerpt || "not set"}</p>
-            <p>tags: {tags || "not set"}</p>
-            <p>draft contentPath: {draftContentPath ?? "not uploaded yet"}</p>
-            <p>published contentPath: {publishedContentPath ?? "not prepared yet"}</p>
-            <p className="mt-3">{statusMessage}</p>
+             {existingImages.length > 0 && (
+               <div className="mt-6">
+                 <p className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant mb-2 border-t border-outline-variant/10 pt-4">Existing Assets</p>
+                 <div className="grid gap-4 sm:grid-cols-2">
+                   {existingImages.map((image) => (
+                      <div key={image.path} className="border border-outline-variant/20 rounded-xl bg-surface-container overflow-hidden flex flex-col justify-between group">
+                         {image.url ? (
+                           // eslint-disable-next-line @next/next/no-img-element
+                           <img
+                             src={image.url}
+                             alt={image.altText}
+                             className="h-32 w-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                           />
+                         ) : (
+                           <div className="flex h-32 items-center justify-center bg-surface-container-low text-[10px] text-on-surface-variant font-label uppercase tracking-widest">
+                             Preview unavailable
+                           </div>
+                         )}
+                         <div className="p-3 flex flex-col gap-2">
+                           <span className="text-[10px] truncate text-on-surface-variant font-mono">{image.path}</span>
+                           <button
+                             type="button"
+                             onClick={() => handleExistingImageInsert(image)}
+                             className="rounded bg-surface-bright px-3 py-2 text-xs text-on-surface hover:text-primary transition-colors text-center font-label uppercase tracking-wider w-full"
+                           >
+                             Insert
+                           </button>
+                         </div>
+                      </div>
+                   ))}
+                 </div>
+               </div>
+             )}
           </div>
-        </div>
+        </section>
+
+        {/* Action Bar */}
+        <section className="space-y-6 pt-6 border-t border-outline-variant/15">
+           <div className="flex flex-wrap gap-3">
+             <button
+                type="button"
+                onClick={handleDraftSave}
+                disabled={isWorking}
+                className="rounded-lg border border-outline-variant/30 px-5 py-2.5 text-xs font-bold font-label tracking-widest text-on-surface transition hover:bg-surface-bright disabled:opacity-50"
+              >
+                Save Draft Markdown
+              </button>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={isWorking}
+                className="rounded-lg border border-tertiary/20 bg-tertiary/5 px-5 py-2.5 text-xs font-bold font-label tracking-widest text-tertiary transition hover:bg-tertiary/10 disabled:opacity-50"
+              >
+                Prepare Publish Assets
+              </button>
+              <button
+                type="button"
+                onClick={handleBlogRecordSave}
+                disabled={isWorking || !draftContentPath}
+                className="rounded-lg primary-gradient px-5 py-2.5 text-xs font-bold font-label tracking-widest text-on-primary transition hover:opacity-90 disabled:opacity-50 shadow-lg shadow-primary/20"
+              >
+                {isEditingExistingBlog ? "Update Record" : "Create Record"}
+              </button>
+           </div>
+           
+           <div className="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/10 font-mono text-[10px] text-on-surface-variant">
+              <p className="mb-2 text-primary">Session Log</p>
+              <p>{statusMessage}</p>
+           </div>
+        </section>
+
+        {/* Content Editor */}
+        <section className="space-y-6 pt-4 border-t border-outline-variant/15">
+          <div className="flex items-center gap-2 text-secondary mb-4">
+            <h3 className="font-label text-xs uppercase tracking-[0.2em] font-bold">Manuscript Content</h3>
+          </div>
+          <textarea 
+            value={markdown}
+            onChange={(e) => setMarkdown(e.target.value)}
+            className="w-full h-[600px] bg-surface-container-low border border-outline-variant/10 rounded-xl p-6 font-mono text-sm leading-relaxed text-on-surface focus:ring-1 focus:ring-primary custom-scrollbar outline-none"
+            placeholder="Start writing your story in markdown..."
+          />
+        </section>
       </div>
 
-      <MarkdownPreview source={markdown} />
-    </section>
+      {/* Right Side: Live Preview */}
+      <div className="w-full lg:w-1/2 overflow-y-auto bg-surface-container-lowest p-12 custom-scrollbar border-l border-outline-variant/15">
+        <div className="max-w-2xl mx-auto">
+          <div className="font-label text-[10px] uppercase tracking-[0.3em] text-primary mb-12 flex items-center gap-4">
+            <span className="w-8 h-px bg-primary/30"></span>
+            Live Preview
+            <span className="w-8 h-px bg-primary/30"></span>
+          </div>
+          
+          <MarkdownPreview source={markdown} />
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -1,26 +1,18 @@
-type TagListProps = {
-  tags: string[];
-};
-
-export default function TagList({ tags }: TagListProps) {
-  if (tags.length === 0) {
-    return (
-      <p className="text-sm text-zinc-500">
-        No tags yet. Keep this component and map blog tags here later.
-      </p>
-    );
+export default function TagList({ tags }: { tags: string[] }) {
+  if (!tags.length) {
+    return null;
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <ul className="flex flex-wrap gap-2 text-xs font-label">
       {tags.map((tag) => (
-        <span
+        <li
           key={tag}
-          className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600"
+          className="rounded-full bg-surface-container-highest px-3 py-1 uppercase tracking-widest text-on-surface-variant border border-outline-variant/10 shadow-sm"
         >
           {tag}
-        </span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

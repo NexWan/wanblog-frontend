@@ -44,29 +44,35 @@ export default function AdminBlogList({ initialBlogs }: AdminBlogListProps) {
   return (
     <>
       {statusMessage ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700 shadow-sm">
+        <div className="rounded-xl border border-outline-variant/20 bg-surface-container-high px-4 py-3 text-sm text-tertiary shadow-sm font-label tracking-wide mb-8">
           {statusMessage}
         </div>
       ) : null}
 
-      <section className="grid gap-5">
+      <section className="grid gap-6">
         {blogs.map((blog) => (
           <article
             key={blog.blogId}
-            className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
+            className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6 transition hover:bg-surface-container-high"
           >
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div className="space-y-3">
+            <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-4 max-w-2xl">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+                  <p className="font-label text-[10px] uppercase tracking-widest text-primary mr-3 inline-block bg-primary/10 px-2 py-0.5 rounded">
                     {blog.status}
                   </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-zinc-900">{blog.title}</h2>
+                  <h2 className="mt-3 text-2xl font-bold text-on-surface font-headline">{blog.title}</h2>
                 </div>
 
-                <TagList tags={(blog.tags ?? []).filter((tag): tag is string => Boolean(tag))} />
+                <div className="flex flex-wrap gap-2 mt-4">
+                   {(blog.tags ?? []).filter((tag): tag is string => Boolean(tag)).map(tag => (
+                      <span key={tag} className="bg-surface-container-highest px-3 py-1 text-[10px] uppercase tracking-widest font-label text-on-surface-variant rounded-full border border-outline-variant/10">
+                        {tag}
+                      </span>
+                   ))}
+                </div>
 
-                <div className="space-y-1 text-sm text-zinc-600">
+                <div className="space-y-1 text-xs text-on-surface-variant/40 font-mono mt-4">
                   <p>blogId: {blog.blogId}</p>
                   <p>slug: {blog.slug}</p>
                   <p>contentPath: {blog.contentPath}</p>
@@ -76,18 +82,18 @@ export default function AdminBlogList({ initialBlogs }: AdminBlogListProps) {
               <div className="flex items-center gap-3">
                 <Link
                   href={`/admin/blogs/${blog.blogId}/edit`}
-                  className="inline-flex w-fit rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
+                  className="inline-flex w-fit rounded-lg border border-outline-variant/30 px-5 py-2.5 text-xs font-bold font-label tracking-widest text-on-surface transition hover:bg-surface-bright"
                 >
-                  Edit shell
+                  Edit
                 </Link>
 
                 <button
                   type="button"
                   aria-label={`Delete ${blog.title}`}
                   onClick={() => setBlogPendingDelete(blog)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-error/20 bg-error/10 text-error transition hover:bg-error/20"
                 >
-                  <span aria-hidden="true">🗑</span>
+                  <span aria-hidden="true" className="text-lg leading-none">×</span>
                 </button>
               </div>
             </div>
@@ -96,23 +102,22 @@ export default function AdminBlogList({ initialBlogs }: AdminBlogListProps) {
       </section>
 
       {blogPendingDelete ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 px-6">
-          <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-xl">
-            <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">Confirm delete</p>
-            <h2 className="mt-3 text-2xl font-semibold text-zinc-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-md px-6">
+          <div className="w-full max-w-md rounded-2xl border border-outline-variant/20 bg-surface-container p-8 shadow-2xl editorial-shadow">
+            <p className="font-label text-[10px] uppercase tracking-widest text-error">Confirm delete</p>
+            <h2 className="mt-4 text-2xl font-bold text-on-surface font-headline leading-tight">
               Delete &quot;{blogPendingDelete.title}&quot;?
             </h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-600">
-              This removes the blog record from the admin list. It does not currently clean up the
-              markdown file or images from storage.
+            <p className="mt-4 text-sm leading-relaxed text-on-surface-variant font-body mb-8">
+              This removes the blog record from the admin list. It does not currently clean up the markdown file or images from storage.
             </p>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="flex justify-end gap-4">
               <button
                 type="button"
                 onClick={() => setBlogPendingDelete(null)}
                 disabled={isDeleting}
-                className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg px-5 py-2.5 text-xs font-bold font-label tracking-widest text-on-surface-variant hover:text-on-surface transition disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -120,9 +125,9 @@ export default function AdminBlogList({ initialBlogs }: AdminBlogListProps) {
                 type="button"
                 onClick={() => void handleDeleteConfirm()}
                 disabled={isDeleting}
-                className="rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg bg-error px-5 py-2.5 text-xs font-bold font-label tracking-widest text-on-error transition hover:opacity-90 disabled:opacity-50"
               >
-                {isDeleting ? "Deleting..." : "Delete post"}
+                {isDeleting ? "Deleting..." : "Delete Post"}
               </button>
             </div>
           </div>
@@ -136,6 +141,5 @@ function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message) {
     return `${fallback} ${error.message}`;
   }
-
   return fallback;
 }

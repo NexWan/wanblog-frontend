@@ -16,12 +16,12 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
 
   if (!blog) {
     return (
-      <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-14 text-zinc-900">
-        <div className="mx-auto flex max-w-4xl flex-col gap-8">
-          <section className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Blog not found</p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight">This blog could not be loaded</h1>
-            <p className="mt-4 text-sm leading-7 text-zinc-600">
+      <main className="px-6 max-w-7xl mx-auto mb-20">
+        <div className="mx-auto flex w-full flex-col gap-8 mt-12">
+          <section className="flex flex-col gap-2 rounded-2xl bg-surface-container p-10 border-l-4 border-error editorial-shadow">
+            <p className="font-label text-xs uppercase tracking-[0.2em] text-error">Blog not found</p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight font-headline text-on-surface">This blog could not be loaded</h1>
+            <p className="mt-4 text-sm leading-relaxed text-on-surface-variant font-body">
               We could not find a blog with that ID.
             </p>
           </section>
@@ -33,12 +33,12 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
   const markdownContent = await getMarkdownContentServer(blog.contentPath);
 
   return (
-    <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-14 text-zinc-900">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8">
-        <section className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">Admin edit shell</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight">{blog.title}</h1>
-          <p className="mt-4 text-sm leading-7 text-zinc-600">
+    <main className="px-6 max-w-[1400px] mx-auto mb-20">
+      <div className="mx-auto flex w-full flex-col gap-8 mt-12">
+        <section className="flex flex-col gap-2 rounded-2xl bg-surface-container p-10 border-l-4 border-primary editorial-shadow">
+          <p className="font-label text-xs uppercase tracking-[0.2em] text-on-surface-variant">Admin edit shell</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight font-headline text-on-surface">{blog.title}</h1>
+          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant font-body">
             Wire this route to fetch the current blog record, hydrate the client editor, and
             let admins replace draft media, re-save markdown, and then prepare the
             published assets.

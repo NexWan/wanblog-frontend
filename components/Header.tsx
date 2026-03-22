@@ -1,118 +1,87 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getCurrentUser, signOut } from "aws-amplify/auth";
-import { usePathname, useRouter } from "next/navigation";
-
-type AuthState = {
-  isAuthenticated: boolean;
-  username: string | null;
-};
-
-const navItems = [
-  { href: "/", label: "Home" },
-  { href: "/blog", label: "Blog" },
-  { href: "/admin/blogs", label: "Admin" },
-];
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { cn } from '@/lib/utils';
 
 export default function Header() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    username: null,
-  });
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadUser = async () => {
-      try {
-        const user = await getCurrentUser();
-
-        if (!isMounted) {
-          return;
-        }
-
-        setAuthState({
-          isAuthenticated: true,
-          username: user.signInDetails?.loginId ?? user.username,
-        });
-      } catch {
-        if (!isMounted) {
-          return;
-        }
-
-        setAuthState({
-          isAuthenticated: false,
-          username: null,
-        });
+  React.useEffect(() => {
+    fetchAuthSession().then(session => {
+      const groups = session.tokens?.accessToken?.payload?.['cognito:groups'];
+      if (Array.isArray(groups) && groups.includes('admin')) {
+        setIsAdmin(true);
       }
-    };
+    }).catch(console.error);
+  }, []);
 
-    void loadUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [pathname]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    setAuthState({
-      isAuthenticated: false,
-      username: null,
-    });
-    router.push("/");
-    router.refresh();
-  };
+  const navLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'Blog', path: '/blog' },
+  ];
+  if (isAdmin) {
+    navLinks.push({ name: 'Admin', path: '/admin/blogs' });
+  }
 
   return (
-    <header className="border-b border-zinc-200 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="text-xl font-semibold text-zinc-900">
-            WanBlog
-          </Link>
+    <nav className="fixed top-0 w-full z-50 glass-nav shadow-2xl shadow-black/20">
+      <div className="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
+        <Link href="/" className="text-2xl font-black text-primary italic font-headline tracking-tight">
+          WanBlog
+        </Link>
 
-          <nav className="hidden items-center gap-5 text-sm text-zinc-600 sm:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={pathname === item.href ? "text-zinc-900" : "hover:text-zinc-900"}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+        {/* Desktop Nav */}
+        <div className="hidden md:flex gap-8 items-center">
+          {navLinks.map((link) => (
+            <Link
+              key={link.path}
+              href={link.path}
+              className={cn(
+                "font-headline tracking-tight transition-colors hover:text-primary/80",
+                pathname === link.path 
+                  ? "text-primary font-bold border-b-2 border-primary pb-1" 
+                  : "text-on-surface-variant"
+              )}
+            >
+              {link.name}
+            </Link>
+          ))}
+          <button className="ml-4 p-2 hover:bg-white/5 rounded-lg transition-all cursor-pointer">
+            <span className="text-primary text-xs uppercase tracking-widest font-label">Light/Dark</span>
+          </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          {authState.isAuthenticated ? (
-            <>
-              <span className="hidden text-sm text-zinc-500 sm:inline">
-                {authState.username}
-              </span>
-              <button
-                type="button"
-                onClick={() => void handleSignOut()}
-                className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
-              >
-                Log out
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/auth"
-              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
-            >
-              Log in
-            </Link>
-          )}
+        {/* Mobile Toggle */}
+        <div className="md:hidden flex items-center gap-4">
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-on-surface font-label text-xs uppercase tracking-widest">
+            {isMenuOpen ? "Close" : "Menu"}
+          </button>
         </div>
       </div>
-    </header>
+
+      {/* Mobile Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-surface-container border-t border-outline-variant/10 p-6 flex flex-col gap-4">
+          {navLinks.map((link) => (
+            <Link
+              key={link.path}
+              href={link.path}
+              onClick={() => setIsMenuOpen(false)}
+              className={cn(
+                "font-headline text-lg tracking-tight",
+                pathname === link.path ? "text-primary font-bold" : "text-on-surface-variant"
+              )}
+            >
+              {link.name}
+            </Link>
+          ))}
+        </div>
+      )}
+    </nav>
   );
 }
