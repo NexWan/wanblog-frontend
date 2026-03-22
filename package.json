@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
     "@aws-amplify/adapter-nextjs": "^1.7.2",
     "@aws-amplify/backend-cli": "^1.8.2",
     "@aws-amplify/ui-react": "^6.15.2",
