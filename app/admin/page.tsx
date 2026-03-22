@@ -26,12 +26,20 @@ export default async function AdminPage() {
           <p className="mt-2 font-mono text-sm">{groups.join(", ") || "none"}</p>
         </div>
 
-        <Link
-          href="/"
-          className="inline-flex w-fit rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
-        >
-          Back home
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/admin/blogs"
+            className="inline-flex w-fit rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
+          >
+            Open blog admin shell
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex w-fit rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
+          >
+            Back home
+          </Link>
+        </div>
       </div>
     </main>
   );

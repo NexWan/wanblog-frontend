@@ -25,16 +25,16 @@ export default async function Home() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/auth"
+                href="/blog"
                 className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700"
               >
-                Log in
+                Browse blog shell
               </Link>
               <Link
-                href="/admin"
+                href="/admin/blogs"
                 className="rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
               >
-                Test admin route
+                Admin blog shell
               </Link>
             </div>
           </div>
@@ -62,19 +62,19 @@ export default async function Home() {
           <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-zinc-900">Featured posts</p>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Placeholder space for highlighted articles or editor picks.
+              Placeholder space for the future published blog feed.
             </p>
           </div>
           <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-zinc-900">Topics</p>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Placeholder categories like engineering, writing, and product notes.
+              Placeholder categories sourced from your blog tags.
             </p>
           </div>
           <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-zinc-900">Newsletter</p>
+            <p className="text-sm font-medium text-zinc-900">Writing flow</p>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Placeholder signup block for future audience capture.
+              Placeholder area for your markdown editor and publish workflow.
             </p>
           </div>
         </section>

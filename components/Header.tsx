@@ -12,8 +12,8 @@ type AuthState = {
 
 const navItems = [
   { href: "/", label: "Home" },
-  { href: "/editor", label: "Write" },
-  { href: "/discover", label: "Discover" },
+  { href: "/blog", label: "Blog" },
+  { href: "/admin/blogs", label: "Admin" },
 ];
 
 export default function Header() {
