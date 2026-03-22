@@ -1,11 +1,46 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { resolveMarkdownAmplifyImages } from "@/lib/blog-storage";
 
 type MarkdownPreviewProps = {
   source: string;
 };
 
 export default function MarkdownPreview({ source }: MarkdownPreviewProps) {
+  const [renderedSource, setRenderedSource] = useState(source);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function resolveSource() {
+      if (!source.includes("amplify://")) {
+        setRenderedSource(source);
+        return;
+      }
+
+      try {
+        const resolved = await resolveMarkdownAmplifyImages(source);
+
+        if (isActive) {
+          setRenderedSource(resolved);
+        }
+      } catch {
+        if (isActive) {
+          setRenderedSource(source);
+        }
+      }
+    }
+
+    void resolveSource();
+
+    return () => {
+      isActive = false;
+    };
+  }, [source]);
+
   return (
     <section className="rounded-2xl border border-dashed border-zinc-300 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between gap-4">
@@ -68,9 +103,25 @@ export default function MarkdownPreview({ source }: MarkdownPreviewProps) {
                 </code>
               );
             },
+            img: ({ src, alt, ...props }) => {
+              if (!src) {
+                return null;
+              }
+
+              return (
+                // Presigned storage URLs are resolved at runtime, so a plain img keeps preview simple.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={src}
+                  alt={alt ?? ""}
+                  className="mb-4 rounded-2xl border border-zinc-200 shadow-sm"
+                  {...props}
+                />
+              );
+            },
           }}
         >
-          {source}
+          {renderedSource}
         </Markdown>
       </div>
     </section>

@@ -1,7 +1,9 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import { createBlog } from "@/lib/blog-data";
+import { startTransition, useEffect, useState } from "react";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
+import { getCurrentUser } from "aws-amplify/auth";
 import {
   createBlogId,
   publishDraftAssets,
@@ -26,7 +28,7 @@ export default function BlogEditorShell({
   initialTags = [],
   initialMarkdown = "",
 }: BlogEditorShellProps) {
-  const [blogId] = useState(initialBlogId || createBlogId());
+  const [blogId, setBlogId] = useState(initialBlogId ?? "");
   const [title, setTitle] = useState(initialTitle);
   const [slug, setSlug] = useState(initialSlug);
   const [excerpt, setExcerpt] = useState(initialExcerpt);
@@ -41,7 +43,69 @@ export default function BlogEditorShell({
   const [publishedContentPath, setPublishedContentPath] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
 
+  useEffect(() => {
+    if (initialBlogId) {
+      setBlogId(initialBlogId);
+      return;
+    }
+
+    setBlogId((currentBlogId) => currentBlogId || createBlogId());
+  }, [initialBlogId]);
+
+  async function handleBlogRecordSave() {
+    if (!blogId) {
+      setStatusMessage("Generating a draft ID. Try again in a moment.");
+      return;
+    }
+
+    if (!draftContentPath) {
+      setStatusMessage("Save the draft markdown before creating the blog record.");
+      return;
+    }
+
+    setIsWorking(true);
+
+    try {
+      const user = await getCurrentUser();
+      const normalizedTags = tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+      const authorName = user.signInDetails?.loginId ?? user.username;
+
+      await createBlog({
+        blogId,
+        title,
+        slug,
+        excerpt: excerpt || null,
+        tags: normalizedTags.length ? normalizedTags : null,
+        contentPath: draftContentPath,
+        coverImagePath: null,
+        authorName,
+        authorUserId: user.userId,
+        status: "DRAFT",
+        publishedAt: new Date().toISOString(),
+      });
+
+      startTransition(() => {
+        setStatusMessage(
+          `Blog record saved for ${authorName}. Stored authorName plus authorUserId for future ownership and profile lookups.`,
+        );
+      });
+    } catch (error) {
+      console.error("createBlog failed", error);
+      setStatusMessage(getErrorMessage(error, "Saving the blog record failed."));
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
   async function handleImageUpload() {
+    if (!blogId) {
+      setStatusMessage("Generating a draft ID. Try again in a moment.");
+      return;
+    }
+
     if (!selectedImage) {
       setStatusMessage("Choose an image before uploading it to the draft media folder.");
       return;
@@ -74,6 +138,11 @@ export default function BlogEditorShell({
   }
 
   async function handleDraftSave() {
+    if (!blogId) {
+      setStatusMessage("Generating a draft ID. Try again in a moment.");
+      return;
+    }
+
     setIsWorking(true);
 
     try {
@@ -96,6 +165,11 @@ export default function BlogEditorShell({
   }
 
   async function handlePublish() {
+    if (!blogId) {
+      setStatusMessage("Generating a draft ID. Try again in a moment.");
+      return;
+    }
+
     setIsWorking(true);
 
     try {
@@ -229,6 +303,15 @@ export default function BlogEditorShell({
             >
               Prepare publish assets
             </button>
+
+            <button
+              type="button"
+              onClick={handleBlogRecordSave}
+              disabled={isWorking || !draftContentPath}
+              className="rounded-full border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-900 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Save blog record
+            </button>
           </div>
 
           <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm leading-6 text-zinc-600">
@@ -250,9 +333,40 @@ export default function BlogEditorShell({
   );
 }
 
-function getErrorMessage(error: unknown, fallback: string) {
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (Array.isArray(error)) {
+    const messages: string = error
+      .map((item) => getErrorMessage(item, ""))
+      .filter(Boolean)
+      .join(" | ");
+
+    return messages ? `${fallback} ${messages}` : fallback;
+  }
+
   if (error instanceof Error && error.message) {
     return `${fallback} ${error.message}`;
+  }
+
+  if (error && typeof error === "object") {
+    const record = error as {
+      message?: unknown;
+      errorType?: unknown;
+      errors?: unknown;
+    };
+
+    const nestedErrors: string = Array.isArray(record.errors)
+      ? record.errors
+          .map((item) => getErrorMessage(item, ""))
+          .filter(Boolean)
+          .join(" | ")
+      : "";
+
+    const parts: string[] = [record.errorType, record.message, nestedErrors]
+      .filter((value): value is string => typeof value === "string" && value.length > 0);
+
+    if (parts.length) {
+      return `${fallback} ${parts.join(" | ")}`;
+    }
   }
 
   return fallback;

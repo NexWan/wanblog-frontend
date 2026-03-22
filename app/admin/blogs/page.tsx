@@ -2,9 +2,14 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import TagList from "@/components/blog/TagList";
 import { placeholderBlogs } from "@/lib/blog-skeleton";
+import { listBlogs } from "@/lib/blog-data.server";
 
 export default async function AdminBlogsPage() {
   await requireAdmin();
+
+  const blogs = await listBlogs();
+
+  console.log("AdminBlogsPage blogs", blogs);
 
   return (
     <main className="min-h-[calc(100vh-73px)] bg-zinc-50 px-6 py-14 text-zinc-900">
@@ -28,7 +33,7 @@ export default async function AdminBlogsPage() {
         </section>
 
         <section className="grid gap-5">
-          {placeholderBlogs.map((blog) => (
+          {blogs.map((blog) => (
             <article
               key={blog.blogId}
               className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
