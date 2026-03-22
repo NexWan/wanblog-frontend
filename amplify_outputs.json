@@ -1,12 +1,13 @@
 {
   "auth": {
-    "user_pool_id": "us-east-2_duMhWxpK6",
+    "user_pool_id": "us-east-2_KOunzIcRG",
     "aws_region": "us-east-2",
-    "user_pool_client_id": "13pvhvd8ebcs1q2r564m00otpl",
-    "identity_pool_id": "us-east-2:52ec9091-8e66-408d-a223-095f663a6a26",
+    "user_pool_client_id": "145e0urnn312978kms69v1ihk1",
+    "identity_pool_id": "us-east-2:39fff6cd-73a2-4506-8e81-4af0b242ec7e",
     "mfa_methods": [],
     "standard_required_attributes": [
-      "email"
+      "email",
+      "preferred_username"
     ],
     "username_attributes": [
       "email"
@@ -14,7 +15,18 @@
     "user_verification_types": [
       "email"
     ],
-    "groups": [],
+    "groups": [
+      {
+        "admin": {
+          "precedence": 0
+        }
+      },
+      {
+        "guest": {
+          "precedence": 1
+        }
+      }
+    ],
     "mfa_configuration": "NONE",
     "password_policy": {
       "min_length": 8,
@@ -35,20 +47,86 @@
     "model_introspection": {
       "version": 1,
       "models": {
-        "Todo": {
-          "name": "Todo",
+        "Blog": {
+          "name": "Blog",
           "fields": {
-            "id": {
-              "name": "id",
+            "blogId": {
+              "name": "blogId",
               "isArray": false,
               "type": "ID",
               "isRequired": true,
               "attributes": []
             },
-            "content": {
-              "name": "content",
+            "title": {
+              "name": "title",
               "isArray": false,
               "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "slug": {
+              "name": "slug",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "excerpt": {
+              "name": "excerpt",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "tags": {
+              "name": "tags",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "contentPath": {
+              "name": "contentPath",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "coverImagePath": {
+              "name": "coverImagePath",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "authorName": {
+              "name": "authorName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "authorUserId": {
+              "name": "authorUserId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": {
+                "enum": "BlogStatus"
+              },
+              "isRequired": true,
+              "attributes": []
+            },
+            "publishedAt": {
+              "name": "publishedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
               "isRequired": false,
               "attributes": []
             },
@@ -70,11 +148,40 @@
             }
           },
           "syncable": true,
-          "pluralName": "Todos",
+          "pluralName": "Blogs",
           "attributes": [
             {
               "type": "model",
               "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "blogId"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "blogsBySlug",
+                "queryField": "listBlogsBySlug",
+                "fields": [
+                  "slug"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "blogsByStatusAndPublishedAt",
+                "queryField": "listBlogsByStatus",
+                "fields": [
+                  "status",
+                  "publishedAt"
+                ]
+              }
             },
             {
               "type": "auth",
@@ -84,10 +191,141 @@
                     "allow": "public",
                     "provider": "iam",
                     "operations": [
-                      "create",
-                      "update",
-                      "delete",
                       "read"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update",
+                      "delete"
+                    ],
+                    "groups": [
+                      "admin"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": true,
+            "primaryKeyFieldName": "blogId",
+            "sortKeyFieldNames": []
+          }
+        },
+        "Comment": {
+          "name": "Comment",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "blogId": {
+              "name": "blogId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "authorName": {
+              "name": "authorName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "authorUserId": {
+              "name": "authorUserId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Comments",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "commentsByBlogId",
+                "queryField": "listCommentsByBlogId",
+                "fields": [
+                  "blogId"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "iam",
+                    "operations": [
+                      "read"
+                    ]
+                  },
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "create"
+                    ]
+                  },
+                  {
+                    "provider": "userPools",
+                    "ownerField": "owner",
+                    "allow": "owner",
+                    "operations": [
+                      "update",
+                      "delete"
+                    ],
+                    "identityClaim": "cognito:username"
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "delete"
+                    ],
+                    "groups": [
+                      "admin"
                     ]
                   }
                 ]
@@ -99,11 +337,163 @@
             "primaryKeyFieldName": "id",
             "sortKeyFieldNames": []
           }
+        },
+        "Like": {
+          "name": "Like",
+          "fields": {
+            "blogId": {
+              "name": "blogId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "userId": {
+              "name": "userId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Likes",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "fields": [
+                  "blogId",
+                  "userId"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "likesByBlogId",
+                "queryField": "listLikesByBlogId",
+                "fields": [
+                  "blogId"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "public",
+                    "provider": "iam",
+                    "operations": [
+                      "read"
+                    ]
+                  },
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "create"
+                    ]
+                  },
+                  {
+                    "provider": "userPools",
+                    "ownerField": "owner",
+                    "allow": "owner",
+                    "operations": [
+                      "delete",
+                      "read"
+                    ],
+                    "identityClaim": "cognito:username"
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read",
+                      "delete"
+                    ],
+                    "groups": [
+                      "admin"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": true,
+            "primaryKeyFieldName": "blogId",
+            "sortKeyFieldNames": [
+              "userId"
+            ]
+          }
         }
       },
-      "enums": {},
+      "enums": {
+        "BlogStatus": {
+          "name": "BlogStatus",
+          "values": [
+            "DRAFT",
+            "PUBLISHED"
+          ]
+        }
+      },
       "nonModels": {}
     }
+  },
+  "storage": {
+    "aws_region": "us-east-2",
+    "bucket_name": "amplify-d2x2q216xa9tje-ma-blogcontentbucket7a57611-9hgm21vxmnwl",
+    "buckets": [
+      {
+        "name": "blogContent",
+        "bucket_name": "amplify-d2x2q216xa9tje-ma-blogcontentbucket7a57611-9hgm21vxmnwl",
+        "aws_region": "us-east-2",
+        "paths": {
+          "drafts/*": {
+            "groupsadmin": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          },
+          "blogs/*": {
+            "guest": [
+              "get",
+              "list"
+            ],
+            "groupsadmin": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          }
+        }
+      }
+    ]
   },
   "version": "1.4"
 }
