@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import TagList from "@/components/blog/TagList";
 import { deleteBlog, type Blog } from "@/lib/blog-data";
 
 type AdminBlogListProps = {
@@ -50,55 +49,61 @@ export default function AdminBlogList({ initialBlogs }: AdminBlogListProps) {
       ) : null}
 
       <section className="grid gap-6">
-        {blogs.map((blog) => (
-          <article
-            key={blog.blogId}
-            className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6 transition hover:bg-surface-container-high"
-          >
-            <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-              <div className="space-y-4 max-w-2xl">
-                <div>
-                  <p className="font-label text-[10px] uppercase tracking-widest text-primary mr-3 inline-block bg-primary/10 px-2 py-0.5 rounded">
-                    {blog.status}
-                  </p>
-                  <h2 className="mt-3 text-2xl font-bold text-on-surface font-headline">{blog.title}</h2>
-                </div>
+        {blogs.map((blog) => {
+          const safeTags: string[] = (blog.tags ?? []).filter(
+            (tag: string | null | undefined): tag is string => Boolean(tag)
+          );
 
-                <div className="flex flex-wrap gap-2 mt-4">
-                   {(blog.tags ?? []).filter((tag): tag is string => Boolean(tag)).map(tag => (
+          return (
+            <article
+              key={blog.blogId}
+              className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6 transition hover:bg-surface-container-high"
+            >
+              <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-4 max-w-2xl">
+                  <div>
+                    <p className="font-label text-[10px] uppercase tracking-widest text-primary mr-3 inline-block bg-primary/10 px-2 py-0.5 rounded">
+                      {blog.status}
+                    </p>
+                    <h2 className="mt-3 text-2xl font-bold text-on-surface font-headline">{blog.title}</h2>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {safeTags.map((tag: string) => (
                       <span key={tag} className="bg-surface-container-highest px-3 py-1 text-[10px] uppercase tracking-widest font-label text-on-surface-variant rounded-full border border-outline-variant/10">
                         {tag}
                       </span>
-                   ))}
+                    ))}
+                  </div>
+
+                  <div className="space-y-1 text-xs text-on-surface-variant/40 font-mono mt-4">
+                    <p>blogId: {blog.blogId}</p>
+                    <p>slug: {blog.slug}</p>
+                    <p>contentPath: {blog.contentPath}</p>
+                  </div>
                 </div>
 
-                <div className="space-y-1 text-xs text-on-surface-variant/40 font-mono mt-4">
-                  <p>blogId: {blog.blogId}</p>
-                  <p>slug: {blog.slug}</p>
-                  <p>contentPath: {blog.contentPath}</p>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href={`/admin/blogs/${blog.blogId}/edit`}
+                    className="inline-flex w-fit rounded-lg border border-outline-variant/30 px-5 py-2.5 text-xs font-bold font-label tracking-widest text-on-surface transition hover:bg-surface-bright"
+                  >
+                    Edit
+                  </Link>
+
+                  <button
+                    type="button"
+                    aria-label={`Delete ${blog.title}`}
+                    onClick={() => setBlogPendingDelete(blog)}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-error/20 bg-error/10 text-error transition hover:bg-error/20"
+                  >
+                    <span aria-hidden="true" className="text-lg leading-none">×</span>
+                  </button>
                 </div>
               </div>
-
-              <div className="flex items-center gap-3">
-                <Link
-                  href={`/admin/blogs/${blog.blogId}/edit`}
-                  className="inline-flex w-fit rounded-lg border border-outline-variant/30 px-5 py-2.5 text-xs font-bold font-label tracking-widest text-on-surface transition hover:bg-surface-bright"
-                >
-                  Edit
-                </Link>
-
-                <button
-                  type="button"
-                  aria-label={`Delete ${blog.title}`}
-                  onClick={() => setBlogPendingDelete(blog)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-error/20 bg-error/10 text-error transition hover:bg-error/20"
-                >
-                  <span aria-hidden="true" className="text-lg leading-none">×</span>
-                </button>
-              </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </section>
 
       {blogPendingDelete ? (
