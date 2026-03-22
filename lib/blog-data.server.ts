@@ -14,19 +14,35 @@ const serverClient = generateServerClientUsingCookies<Schema>({
   cookies,
 });
 
-export async function listBlogs() {
+async function assertNoErrors(
+  errors: { message: string }[] | undefined,
+) {
+  if (errors?.length) {
+    throw new Error(errors.map((error) => error.message).join(", "));
+  }
+}
+
+export async function listBlogsPublic() {
   const { data, errors } = await serverClient.models.Blog.list({
     authMode: "iam",
   });
 
-  if (errors?.length) {
-    throw new Error(errors.map((error) => error.message).join(", "));
-  }
+  await assertNoErrors(errors);
 
   return data;
 }
 
-export async function getBlogBySlug(slug: string) {
+export async function listBlogsForAdmin() {
+  const { data, errors } = await serverClient.models.Blog.list({
+    authMode: "userPool",
+  });
+
+  await assertNoErrors(errors);
+
+  return data;
+}
+
+export async function getBlogBySlugPublic(slug: string) {
   const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
     { slug },
     {
@@ -34,9 +50,33 @@ export async function getBlogBySlug(slug: string) {
     },
   );
 
-  if (errors?.length) {
-    throw new Error(errors.map((error) => error.message).join(", "));
-  }
+  await assertNoErrors(errors);
 
   return data[0] ?? null;
+}
+
+export async function getBlogBySlugForAdmin(slug: string) {
+  const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
+    { slug },
+    {
+      authMode: "userPool",
+    },
+  );
+
+  await assertNoErrors(errors);
+
+  return data[0] ?? null;
+}
+
+export async function getBlogByIdForAdmin(blogId: string) {
+  const { data, errors } = await serverClient.models.Blog.get(
+    { blogId },
+    {
+      authMode: "userPool",
+    },
+  );
+
+  await assertNoErrors(errors);
+
+  return data ?? null;
 }
