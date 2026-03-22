@@ -4,13 +4,13 @@ import { SAMPLE_POSTS } from "@/lib/utils";
 import PostCard from "@/components/PostCard";
 
 export default async function Home() {
-  const [groups, admin] = await Promise.all([
+  const [groups, isAdmin] = await Promise.all([
     getCurrentUserGroups(),
     isCurrentUserAdmin(),
   ]);
 
-  const featuredPost = SAMPLE_POSTS.find(p => p.featured) || SAMPLE_POSTS[0];
-  const recentPosts = SAMPLE_POSTS.filter(p => !p.featured);
+  const featuredPost = SAMPLE_POSTS.find((post) => post.featured) || SAMPLE_POSTS[0];
+  const recentPosts = SAMPLE_POSTS.filter((post) => !post.featured);
 
   return (
     <main className="px-6 max-w-7xl mx-auto">
@@ -30,7 +30,7 @@ export default async function Home() {
                 WanBlog Beta
               </span>
               <span className="font-label text-xs uppercase tracking-widest text-on-surface-variant">
-                Session info: {admin ? "Admin access" : "User"}
+                Session info: {isAdmin ? "Admin access" : "User"}
               </span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-6 text-on-surface leading-tight tracking-tighter font-headline">
@@ -57,14 +57,17 @@ export default async function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16">
             {recentPosts.map((post) => (
-              <PostCard key={post.id} post={{
-                title: post.title,
-                slug: post.slug,
-                excerpt: post.excerpt,
-                authorName: post.author.name,
-                tags: post.tags,
-                publishedAt: new Date().toISOString()
-              }} />
+              <PostCard
+                key={post.id}
+                post={{
+                  title: post.title,
+                  slug: post.slug,
+                  excerpt: post.excerpt,
+                  authorName: post.author.name,
+                  tags: post.tags,
+                  publishedAt: new Date().toISOString(),
+                }}
+              />
             ))}
           </div>
         </div>
@@ -72,16 +75,17 @@ export default async function Home() {
         {/* Sidebar */}
         <aside className="lg:col-span-4 space-y-16">
           {/* Admin Block */}
-          <section className="bg-surface-container rounded-xl p-8 border-l-4 border-primary">
-            <h3 className="text-2xl font-bold mb-4 font-headline">Administration</h3>
-            <p className="text-on-surface-variant mb-6 text-sm font-body leading-relaxed">
-              If you have access, you can manage the content listed on the platform here. Groups: {groups.join(", ") || "none"}
-            </p>
-            <Link href="/admin/blogs" className="block w-full text-center primary-gradient text-on-primary font-bold py-3 rounded-lg shadow-lg shadow-primary/10">
-              Manage Posts
-            </Link>
-          </section>
-
+          {isAdmin && (
+            <section className="bg-surface-container rounded-xl p-8 border-l-4 border-primary">
+              <h3 className="text-2xl font-bold mb-4 font-headline">Administration</h3>
+              <p className="text-on-surface-variant mb-6 text-sm font-body leading-relaxed">
+                If you have access, you can manage the content listed on the platform here. Groups: {groups.join(", ") || "none"}
+              </p>
+              <Link href="/admin/blogs" className="block w-full text-center primary-gradient text-on-primary font-bold py-3 rounded-lg shadow-lg shadow-primary/10">
+                Manage Posts
+              </Link>
+            </section>
+          )}
           {/* Tags */}
           <section>
             <h3 className="font-label text-sm uppercase tracking-[0.2em] text-on-surface-variant mb-8 flex items-center">
@@ -89,7 +93,7 @@ export default async function Home() {
               <span className="ml-4 h-px flex-grow bg-outline-variant/20"></span>
             </h3>
             <div className="flex flex-wrap gap-2">
-              {['AWS AMPLIFY', 'NEXTJS', 'TYPESCRIPT', 'TAILWINDCSS', 'DARK MODE', 'UI DESIGN'].map(tag => (
+              {["AWS AMPLIFY", "NEXTJS", "TYPESCRIPT", "TAILWINDCSS", "DARK MODE", "UI DESIGN"].map((tag) => (
                 <span key={tag} className="bg-surface-container-high hover:bg-primary hover:text-on-primary transition-colors px-4 py-2 rounded-full text-xs font-bold font-label cursor-pointer">
                   {tag}
                 </span>
