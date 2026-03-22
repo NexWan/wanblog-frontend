@@ -1,3 +1,6 @@
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 type MarkdownPreviewProps = {
   source: string;
 };
@@ -8,28 +11,68 @@ export default function MarkdownPreview({ source }: MarkdownPreviewProps) {
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-            Markdown Preview Shell
+            Markdown Preview
           </p>
-          <h2 className="mt-2 text-xl font-semibold text-zinc-900">Renderer placeholder</h2>
+          <h2 className="mt-2 text-xl font-semibold text-zinc-900">Live renderer</h2>
         </div>
-        <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
-          Swap in react-markdown
+        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+          react-markdown enabled
         </span>
       </div>
 
       <p className="mt-4 text-sm leading-6 text-zinc-600">
-        This shell keeps the future component boundary in place. Replace the
-        <code className="mx-1 rounded bg-zinc-100 px-2 py-1 text-xs">pre</code>
-        block below with a shared
+        The preview now renders your markdown directly with
         <code className="mx-1 rounded bg-zinc-100 px-2 py-1 text-xs">react-markdown</code>
-        renderer plus
+        plus
         <code className="mx-1 rounded bg-zinc-100 px-2 py-1 text-xs">remark-gfm</code>
-        once you build the real preview.
+        so headings, lists, tables, and task lists behave like markdown instead of plain text.
       </p>
 
-      <pre className="mt-6 overflow-x-auto rounded-2xl bg-zinc-950 p-5 text-sm leading-6 text-zinc-100">
-        <code>{source}</code>
-      </pre>
+      <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+        <Markdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h1: (props) => (
+              <h1 className="mt-2 mb-4 text-3xl font-bold tracking-tight text-zinc-950" {...props} />
+            ),
+            h2: (props) => (
+              <h2 className="mt-8 mb-3 text-2xl font-semibold tracking-tight text-zinc-900" {...props} />
+            ),
+            h3: (props) => (
+              <h3 className="mt-6 mb-2 text-xl font-semibold text-zinc-900" {...props} />
+            ),
+            p: (props) => <p className="mb-4 leading-7 text-zinc-700" {...props} />,
+            ul: (props) => <ul className="mb-4 list-disc space-y-2 pl-6 text-zinc-700" {...props} />,
+            ol: (props) => <ol className="mb-4 list-decimal space-y-2 pl-6 text-zinc-700" {...props} />,
+            li: (props) => <li className="leading-7" {...props} />,
+            blockquote: (props) => (
+              <blockquote className="mb-4 border-l-4 border-zinc-300 pl-4 italic text-zinc-700" {...props} />
+            ),
+            code: ({ className, children, ...props }) => {
+              const isInline = !className;
+
+              if (isInline) {
+                return (
+                  <code
+                    className="rounded bg-zinc-200 px-1.5 py-0.5 font-mono text-sm text-zinc-900"
+                    {...props}
+                  >
+                    {children}
+                  </code>
+                );
+              }
+
+              return (
+                <code className="block overflow-x-auto rounded-xl bg-zinc-950 p-4 font-mono text-sm text-zinc-100" {...props}>
+                  {children}
+                </code>
+              );
+            },
+          }}
+        >
+          {source}
+        </Markdown>
+      </div>
     </section>
   );
 }

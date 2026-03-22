@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
-import MarkdownPreview from "@/components/blog/MarkdownPreview";
+import BlogEditorShell from "@/components/blog/BlogEditorShell";
 import { placeholderBlogs, placeholderMarkdown } from "@/lib/blog-skeleton";
 
 type EditBlogPageProps = {
@@ -21,23 +21,18 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
           <h1 className="mt-3 text-4xl font-semibold tracking-tight">{blog.title}</h1>
           <p className="mt-4 text-sm leading-7 text-zinc-600">
             Wire this route to fetch the current blog record, hydrate the client editor, and
-            let admins replace or publish the markdown file.
+            let admins replace draft media, re-save markdown, and then prepare the
+            published assets.
           </p>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-zinc-900">Editing checklist</h2>
-            <ul className="mt-5 space-y-3 text-sm leading-6 text-zinc-600">
-              <li>Load the blog by ID for admin editing.</li>
-              <li>Fetch the existing markdown from S3 into the textarea.</li>
-              <li>Persist draft updates back to the draft content path.</li>
-              <li>Publish by writing to the published path and setting `publishedAt`.</li>
-            </ul>
-          </div>
-
-          <MarkdownPreview source={placeholderMarkdown} />
-        </section>
+        <BlogEditorShell
+          initialBlogId={blog.blogId}
+          initialTitle={blog.title}
+          initialSlug={blog.slug}
+          initialTags={blog.tags}
+          initialMarkdown={placeholderMarkdown}
+        />
       </div>
     </main>
   );
