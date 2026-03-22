@@ -53,6 +53,8 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
           initialTags={(blog.tags ?? []).filter((tag): tag is string => Boolean(tag))}
           initialMarkdown={markdownContent}
           initialContentPath={blog.contentPath}
+          initialStatus={blog.status}
+          initialPublishedAt={blog.publishedAt ?? null}
         />
       </div>
     </main>

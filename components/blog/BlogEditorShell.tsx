@@ -1,6 +1,7 @@
 "use client";
 
 import { createBlog, updateBlog } from "@/lib/blog-data";
+import type { BlogStatus } from "@/lib/blog-data";
 import { startTransition, useEffect, useState } from "react";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
 import { getCurrentUser } from "aws-amplify/auth";
@@ -22,6 +23,8 @@ type BlogEditorShellProps = {
   initialTags?: string[];
   initialMarkdown?: string;
   initialContentPath?: string;
+  initialStatus?: BlogStatus;
+  initialPublishedAt?: string | null;
 };
 
 export default function BlogEditorShell({
@@ -32,6 +35,8 @@ export default function BlogEditorShell({
   initialTags = [],
   initialMarkdown = "",
   initialContentPath,
+  initialStatus = "DRAFT",
+  initialPublishedAt = null,
 }: BlogEditorShellProps) {
   const isEditingExistingBlog = Boolean(initialBlogId);
   const [blogId, setBlogId] = useState(initialBlogId ?? "");
@@ -45,6 +50,8 @@ export default function BlogEditorShell({
   const [statusMessage, setStatusMessage] = useState(
     "Draft assets will be written to S3 under the drafts prefix."
   );
+  const [blogStatus, setBlogStatus] = useState<BlogStatus>(initialStatus);
+  const [publishedAt, setPublishedAt] = useState<string | null>(initialPublishedAt);
   const [draftContentPath, setDraftContentPath] = useState<string | null>(initialContentPath ?? null);
   const [publishedContentPath, setPublishedContentPath] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
@@ -72,6 +79,11 @@ export default function BlogEditorShell({
 
     setBlogId((currentBlogId) => currentBlogId || createBlogId());
   }, [initialBlogId]);
+
+  useEffect(() => {
+    setBlogStatus(initialStatus);
+    setPublishedAt(initialPublishedAt);
+  }, [initialPublishedAt, initialStatus]);
 
   useEffect(() => {
     let isActive = true;
@@ -121,10 +133,17 @@ export default function BlogEditorShell({
       return;
     }
 
-    const contentPathToSave = draftContentPath ?? initialContentPath ?? publishedContentPath;
+    const contentPathToSave =
+      blogStatus === "PUBLISHED"
+        ? publishedContentPath ?? (initialStatus === "PUBLISHED" ? initialContentPath ?? null : null)
+        : draftContentPath ?? initialContentPath ?? publishedContentPath;
 
     if (!contentPathToSave) {
-      setStatusMessage("Save the draft markdown before saving the blog record.");
+      setStatusMessage(
+        blogStatus === "PUBLISHED"
+          ? "Prepare publish assets before saving a published blog record."
+          : "Save the draft markdown before saving the blog record."
+      );
       return;
     }
 
@@ -137,6 +156,8 @@ export default function BlogEditorShell({
         .map((tag) => tag.trim())
         .filter(Boolean);
       const authorName = user.signInDetails?.loginId ?? user.username;
+      const nextPublishedAt =
+        blogStatus === "PUBLISHED" ? publishedAt ?? new Date().toISOString() : null;
 
       const blogPayload = {
         title,
@@ -147,8 +168,8 @@ export default function BlogEditorShell({
         coverImagePath: null,
         authorName,
         authorUserId: user.userId,
-        status: "DRAFT" as const,
-        publishedAt: null,
+        status: blogStatus,
+        publishedAt: nextPublishedAt,
       };
 
       if (isEditingExistingBlog) {
@@ -161,10 +182,11 @@ export default function BlogEditorShell({
       }
 
       startTransition(() => {
+        setPublishedAt(nextPublishedAt);
         setStatusMessage(
           isEditingExistingBlog
-            ? `Blog record updated for ${authorName}.`
-            : `Blog record saved for ${authorName}. Stored authorName plus authorUserId for future ownership and profile lookups.`
+            ? `Blog record updated for ${authorName} as ${blogStatus}.`
+            : `Blog record saved for ${authorName} as ${blogStatus}. Stored authorName plus authorUserId for future ownership and profile lookups.`
         );
       });
     } catch (error) {
@@ -253,8 +275,9 @@ export default function BlogEditorShell({
 
       startTransition(() => {
         setPublishedContentPath(result.contentPath);
+        setBlogStatus("PUBLISHED");
         setStatusMessage(
-          `Published assets prepared under blogs/${blogId}/... and the markdown now points at published media paths.`
+          `Published assets prepared under blogs/${blogId}/... and the editor is now set to PUBLISHED.`
         );
       });
     } catch (error) {
@@ -298,6 +321,22 @@ export default function BlogEditorShell({
                 </div>
               </div>
               <div className="space-y-2">
+                <label className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60">Record Status</label>
+                <div className="flex items-center bg-surface-container rounded-xl px-4 py-3 gap-2">
+                  <select
+                    value={blogStatus}
+                    onChange={(e) => setBlogStatus(e.target.value as BlogStatus)}
+                    className="w-full appearance-none bg-transparent border-none text-sm font-body text-on-surface outline-none"
+                  >
+                    <option value="DRAFT">DRAFT</option>
+                    <option value="PUBLISHED">PUBLISHED</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <label className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60">Tags (Comma separated)</label>
                 <div className="flex items-center bg-surface-container rounded-xl px-4 py-3 gap-2">
                   <input 
@@ -306,6 +345,16 @@ export default function BlogEditorShell({
                     className="bg-transparent border-none focus:ring-0 text-sm font-body text-on-surface w-full outline-none" 
                     placeholder="EDITORIAL, THEORY"
                   />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60">Published Timestamp</label>
+                <div className="flex min-h-[50px] items-center bg-surface-container rounded-xl px-4 py-3 text-sm text-on-surface-variant">
+                  {publishedAt
+                    ? new Date(publishedAt).toLocaleString()
+                    : blogStatus === "PUBLISHED"
+                      ? "Will be set when the record is saved."
+                      : "Not published yet."}
                 </div>
               </div>
             </div>
@@ -416,10 +465,15 @@ export default function BlogEditorShell({
               <button
                 type="button"
                 onClick={handleBlogRecordSave}
-                disabled={isWorking || !draftContentPath}
+                disabled={
+                  isWorking ||
+                  (blogStatus === "PUBLISHED"
+                    ? !publishedContentPath && !(initialStatus === "PUBLISHED" && initialContentPath)
+                    : !draftContentPath && !initialContentPath && !publishedContentPath)
+                }
                 className="rounded-lg primary-gradient px-5 py-2.5 text-xs font-bold font-label tracking-widest text-on-primary transition hover:opacity-90 disabled:opacity-50 shadow-lg shadow-primary/20"
               >
-                {isEditingExistingBlog ? "Update Record" : "Create Record"}
+                {isEditingExistingBlog ? `Update ${blogStatus}` : `Create ${blogStatus}`}
               </button>
            </div>
            
