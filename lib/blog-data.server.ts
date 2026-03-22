@@ -16,7 +16,7 @@ const serverClient = generateServerClientUsingCookies<Schema>({
 
 export async function listBlogs() {
   const { data, errors } = await serverClient.models.Blog.list({
-    authMode: "userPool",
+    authMode: "iam",
   });
 
   if (errors?.length) {
@@ -30,7 +30,7 @@ export async function getBlogBySlug(slug: string) {
   const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
     { slug },
     {
-      authMode: "userPool",
+      authMode: "iam",
     },
   );
 
