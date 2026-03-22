@@ -5,6 +5,8 @@ import { generateServerClientUsingCookies } from "@aws-amplify/adapter-nextjs/ap
 import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
 import type { Schema } from "../../wanblog-backend/amplify/data/resource";
 
+type Blog = Schema["Blog"]["type"];
+
 const outputs = getServerAmplifyOutputs();
 
 const serverClient = generateServerClientUsingCookies<Schema>({
@@ -66,7 +68,7 @@ export async function getBlogBySlugForAdmin(slug: string) {
   return data[0] ?? null;
 }
 
-export async function getBlogByIdForAdmin(blogId: string) {
+export async function getBlogByIdForAdmin(blogId: string): Promise<Blog | null> {
   const { data, errors } = await serverClient.models.Blog.get(
     { blogId },
     {
@@ -76,5 +78,9 @@ export async function getBlogByIdForAdmin(blogId: string) {
 
   await assertNoErrors(errors);
 
-  return data ?? null;
+  if (Array.isArray(data)) {
+    return (data[0] as Blog | undefined) ?? null;
+  }
+
+  return (data as Blog | null) ?? null;
 }
