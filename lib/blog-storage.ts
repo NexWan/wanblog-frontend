@@ -1,4 +1,4 @@
-import { copy, getUrl, uploadData } from "aws-amplify/storage";
+import { copy, getUrl, list, uploadData } from "aws-amplify/storage";
 import prodOutputs from "@/amplify_outputs.json";
 import devOutputs from "@/amplify_outputs_dev.json";
 
@@ -19,6 +19,13 @@ const BLOG_STORAGE_BUCKET = {
 };
 
 export type BlogStorageScope = "drafts" | "blogs";
+
+export type BlogMediaItem = {
+  path: string;
+  scope: BlogStorageScope;
+  url: string;
+  altText: string;
+};
 
 type UploadBlogImageInput = {
   blogId: string;
@@ -178,6 +185,42 @@ export async function resolveMarkdownAmplifyImages(markdown: string) {
   }
 
   return resolvedMarkdown;
+}
+
+export async function listBlogImages(blogId: string): Promise<BlogMediaItem[]> {
+  const scopes: BlogStorageScope[] = ["drafts", "blogs"];
+
+  const results = await Promise.all(
+    scopes.map(async (scope) => {
+      const response = await list({
+        path: `${scope}/${blogId}/media/`,
+        options: {
+          bucket: BLOG_STORAGE_BUCKET,
+          listAll: true,
+        },
+      });
+
+      const items = response.items.filter((item) => item.path);
+      const resolvedItems = await Promise.all(
+        items.map(async (item) => {
+          const { url } = await resolveAmplifyImageUrl(item.path);
+
+          return {
+            path: item.path,
+            scope,
+            url,
+            altText: stripExtension(item.path.split("/").pop() ?? "Blog image"),
+          };
+        }),
+      );
+
+      return resolvedItems;
+    }),
+  );
+
+  return results
+    .flat()
+    .sort((left, right) => left.path.localeCompare(right.path));
 }
 
 export async function getMarkdownContent(path: string) {

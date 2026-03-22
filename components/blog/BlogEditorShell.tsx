@@ -5,8 +5,11 @@ import { startTransition, useEffect, useState } from "react";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
 import { getCurrentUser } from "aws-amplify/auth";
 import {
+  listBlogImages,
+  type BlogMediaItem,
   createBlogId,
   publishDraftAssets,
+  toAmplifyImageMarkdown,
   uploadBlogImage,
   uploadBlogMarkdown,
 } from "@/lib/blog-storage";
@@ -45,6 +48,21 @@ export default function BlogEditorShell({
   const [draftContentPath, setDraftContentPath] = useState<string | null>(initialContentPath ?? null);
   const [publishedContentPath, setPublishedContentPath] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
+  const [existingImages, setExistingImages] = useState<BlogMediaItem[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
+
+  async function refreshExistingImages(currentBlogId: string) {
+    setIsLoadingImages(true);
+
+    try {
+      const images = await listBlogImages(currentBlogId);
+      setExistingImages(images);
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error, "Loading existing images failed."));
+    } finally {
+      setIsLoadingImages(false);
+    }
+  }
 
   useEffect(() => {
     if (initialBlogId) {
@@ -54,6 +72,48 @@ export default function BlogEditorShell({
 
     setBlogId((currentBlogId) => currentBlogId || createBlogId());
   }, [initialBlogId]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadImages() {
+      if (!blogId) {
+        return;
+      }
+
+      try {
+        const images = await listBlogImages(blogId);
+
+        if (isActive) {
+          setExistingImages(images);
+        }
+      } catch (error) {
+        if (isActive) {
+          setStatusMessage(getErrorMessage(error, "Loading existing images failed."));
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingImages(false);
+        }
+      }
+    }
+
+    void loadImages();
+
+    return () => {
+      isActive = false;
+    };
+  }, [blogId]);
+
+  function handleExistingImageInsert(image: BlogMediaItem) {
+    const altText = imageAltText.trim() || image.altText;
+
+    setMarkdown((currentMarkdown) => {
+      const needsSpacing = currentMarkdown.length > 0 && !currentMarkdown.endsWith("\n");
+      return `${currentMarkdown}${needsSpacing ? "\n\n" : ""}${toAmplifyImageMarkdown(image.path, altText)}\n`;
+    });
+    setStatusMessage(`Inserted existing ${image.scope} image from ${image.path} into markdown.`);
+  }
 
   async function handleBlogRecordSave() {
     if (!blogId) {
@@ -145,6 +205,7 @@ export default function BlogEditorShell({
           `Image uploaded to ${result.path}. The markdown now stores an Amplify path reference.`,
         );
       });
+      await refreshExistingImages(blogId);
     } catch (error) {
       setStatusMessage(getErrorMessage(error, "Image upload failed."));
     } finally {
@@ -289,6 +350,64 @@ export default function BlogEditorShell({
               </code>
               instead of a short-lived presigned URL.
             </p>
+
+            <div className="mt-5 rounded-2xl border border-zinc-200 bg-white p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-900">Existing blog images</p>
+                  <p className="text-sm text-zinc-600">
+                    Reuse images already stored for this blog instead of guessing the path.
+                  </p>
+                </div>
+                {isLoadingImages ? (
+                  <span className="text-xs text-zinc-500">Loading...</span>
+                ) : (
+                  <span className="text-xs text-zinc-500">{existingImages.length} found</span>
+                )}
+              </div>
+
+              {existingImages.length ? (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {existingImages.map((image) => (
+                    <article
+                      key={image.path}
+                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-3"
+                    >
+                      {image.url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={image.url}
+                          alt={image.altText}
+                          className="h-40 w-full rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-40 items-center justify-center rounded-lg bg-zinc-200 text-sm text-zinc-500">
+                          Preview unavailable
+                        </div>
+                      )}
+
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                          {image.scope}
+                        </p>
+                        <p className="truncate text-sm text-zinc-700">{image.path}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleExistingImageInsert(image)}
+                          className="rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
+                        >
+                          Insert into markdown
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-zinc-600">
+                  No existing images were found for this blog yet.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-3">
