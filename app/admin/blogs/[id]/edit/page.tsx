@@ -31,6 +31,9 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
   }
 
   const markdownContent = await getMarkdownContentServer(blog.contentPath);
+  const initialTags = (blog.tags ?? []).filter(
+    (tag: string | null | undefined): tag is string => Boolean(tag)
+  );
 
   return (
     <main className="px-6 max-w-[1400px] mx-auto mb-20">
@@ -50,7 +53,7 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
           initialTitle={blog.title}
           initialSlug={blog.slug}
           initialExcerpt={blog.excerpt ?? ""}
-          initialTags={(blog.tags ?? []).filter((tag): tag is string => Boolean(tag))}
+          initialTags={initialTags}
           initialMarkdown={markdownContent}
           initialContentPath={blog.contentPath}
           initialStatus={blog.status}
