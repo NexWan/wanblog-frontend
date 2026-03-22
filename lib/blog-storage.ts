@@ -1,6 +1,22 @@
 import { copy, getUrl, uploadData } from "aws-amplify/storage";
+import prodOutputs from "@/amplify_outputs.json";
+import devOutputs from "@/amplify_outputs_dev.json";
 
 export const AMPLIFY_IMAGE_PROTOCOL = "amplify://";
+const outputs =
+  process.env.NEXT_PUBLIC_ENV === "development" ? devOutputs : prodOutputs;
+
+const storageConfig = (outputs as {
+  storage: {
+    bucket_name: string;
+    aws_region: string;
+  };
+}).storage;
+
+const BLOG_STORAGE_BUCKET = {
+  bucketName: storageConfig.bucket_name,
+  region: storageConfig.aws_region,
+};
 
 export type BlogStorageScope = "drafts" | "blogs";
 
@@ -75,6 +91,7 @@ export async function uploadBlogImage({
     path,
     data: file,
     options: {
+      bucket: BLOG_STORAGE_BUCKET,
       contentType: file.type || "application/octet-stream",
     },
   }).result;
@@ -96,6 +113,7 @@ export async function uploadBlogMarkdown({
     path,
     data: new Blob([markdown], { type: "text/markdown;charset=utf-8" }),
     options: {
+      bucket: BLOG_STORAGE_BUCKET,
       contentType: "text/markdown; charset=utf-8",
     },
   }).result;
@@ -111,8 +129,8 @@ export async function publishDraftAssets(blogId: string, draftMarkdown: string) 
 
     if (publishedPath !== draftPath) {
       await copy({
-        source: { path: draftPath },
-        destination: { path: publishedPath },
+        source: { path: draftPath, bucket: BLOG_STORAGE_BUCKET },
+        destination: { path: publishedPath, bucket: BLOG_STORAGE_BUCKET },
       });
     }
   }
@@ -139,6 +157,7 @@ export async function resolveAmplifyImageUrl(path: string) {
   const result = await getUrl({
     path,
     options: {
+      bucket: BLOG_STORAGE_BUCKET,
       validateObjectExistence: true,
     },
   });
@@ -159,6 +178,17 @@ export async function resolveMarkdownAmplifyImages(markdown: string) {
   }
 
   return resolvedMarkdown;
+}
+
+export async function getMarkdownContent(path: string) {
+  const { url } = await resolveAmplifyImageUrl(path);
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch markdown content from ${url}`);
+  }
+
+  return await response.text();
 }
 
 function toPublishedPath(path: string, blogId: string) {
