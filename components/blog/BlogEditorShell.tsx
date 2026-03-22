@@ -1,6 +1,6 @@
 "use client";
 
-import { createBlog } from "@/lib/blog-data";
+import { createBlog, updateBlog } from "@/lib/blog-data";
 import { startTransition, useEffect, useState } from "react";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
 import { getCurrentUser } from "aws-amplify/auth";
@@ -18,6 +18,7 @@ type BlogEditorShellProps = {
   initialExcerpt?: string;
   initialTags?: string[];
   initialMarkdown?: string;
+  initialContentPath?: string;
 };
 
 export default function BlogEditorShell({
@@ -27,7 +28,9 @@ export default function BlogEditorShell({
   initialExcerpt = "",
   initialTags = [],
   initialMarkdown = "",
+  initialContentPath,
 }: BlogEditorShellProps) {
+  const isEditingExistingBlog = Boolean(initialBlogId);
   const [blogId, setBlogId] = useState(initialBlogId ?? "");
   const [title, setTitle] = useState(initialTitle);
   const [slug, setSlug] = useState(initialSlug);
@@ -39,7 +42,7 @@ export default function BlogEditorShell({
   const [statusMessage, setStatusMessage] = useState(
     "Draft assets will be written to S3 under the drafts prefix.",
   );
-  const [draftContentPath, setDraftContentPath] = useState<string | null>(null);
+  const [draftContentPath, setDraftContentPath] = useState<string | null>(initialContentPath ?? null);
   const [publishedContentPath, setPublishedContentPath] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
 
@@ -58,8 +61,10 @@ export default function BlogEditorShell({
       return;
     }
 
-    if (!draftContentPath) {
-      setStatusMessage("Save the draft markdown before creating the blog record.");
+    const contentPathToSave = draftContentPath ?? initialContentPath ?? publishedContentPath;
+
+    if (!contentPathToSave) {
+      setStatusMessage("Save the draft markdown before saving the blog record.");
       return;
     }
 
@@ -73,27 +78,37 @@ export default function BlogEditorShell({
         .filter(Boolean);
       const authorName = user.signInDetails?.loginId ?? user.username;
 
-      await createBlog({
-        blogId,
+      const blogPayload = {
         title,
         slug,
         excerpt: excerpt || null,
         tags: normalizedTags.length ? normalizedTags : null,
-        contentPath: draftContentPath,
+        contentPath: contentPathToSave,
         coverImagePath: null,
         authorName,
         authorUserId: user.userId,
-        status: "DRAFT",
-        publishedAt: new Date().toISOString(),
-      });
+        status: "DRAFT" as const,
+        publishedAt: null,
+      };
+
+      if (isEditingExistingBlog) {
+        await updateBlog(blogId, blogPayload);
+      } else {
+        await createBlog({
+          blogId,
+          ...blogPayload,
+        });
+      }
 
       startTransition(() => {
         setStatusMessage(
-          `Blog record saved for ${authorName}. Stored authorName plus authorUserId for future ownership and profile lookups.`,
+          isEditingExistingBlog
+            ? `Blog record updated for ${authorName}.`
+            : `Blog record saved for ${authorName}. Stored authorName plus authorUserId for future ownership and profile lookups.`,
         );
       });
     } catch (error) {
-      console.error("createBlog failed", error);
+      console.error("saveBlog failed", error);
       setStatusMessage(getErrorMessage(error, "Saving the blog record failed."));
     } finally {
       setIsWorking(false);
@@ -310,7 +325,7 @@ export default function BlogEditorShell({
               disabled={isWorking || !draftContentPath}
               className="rounded-full border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-900 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Save blog record
+              {isEditingExistingBlog ? "Update blog record" : "Create blog record"}
             </button>
           </div>
 

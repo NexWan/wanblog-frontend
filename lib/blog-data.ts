@@ -17,6 +17,21 @@ export async function postBlog(blog: Blog) {
   return { data, errors };
 }
 
+export async function updateBlog(blogId: string, updates: Partial<CreateBlogInput>) {
+  const { data, errors } = await client.models.Blog.update({
+    blogId,
+    ...updates,
+  }, {
+    authMode: "userPool",
+  });
+
+  if (errors?.length) {
+    throw new Error(errors.map((error) => error.message).join(", "));
+  }
+
+  return { data, errors };
+}
+
 export async function createBlog(blog: CreateBlogInput) {
   const { data, errors } = await client.models.Blog.create(blog, {
     authMode: "userPool",

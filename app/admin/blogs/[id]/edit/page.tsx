@@ -1,6 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
 import BlogEditorShell from "@/components/blog/BlogEditorShell";
-import { placeholderMarkdown } from "@/lib/blog-skeleton";
 import { getBlogByIdForAdmin } from "@/lib/blog-data.server";
 import { getMarkdownContentServer } from "@/lib/blog-storage.server";
 
@@ -50,8 +49,10 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
           initialBlogId={blog.blogId}
           initialTitle={blog.title}
           initialSlug={blog.slug}
+          initialExcerpt={blog.excerpt ?? ""}
           initialTags={(blog.tags ?? []).filter((tag): tag is string => Boolean(tag))}
           initialMarkdown={markdownContent}
+          initialContentPath={blog.contentPath}
         />
       </div>
     </main>
