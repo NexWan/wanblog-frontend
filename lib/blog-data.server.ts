@@ -39,14 +39,32 @@ async function assertNoErrors(
   }
 }
 
+function isUnauthorizedError(error: unknown) {
+  return error instanceof Error && error.message.toLowerCase().includes("unauthorized");
+}
+
 export async function listBlogsPublic() {
-  const { data, errors } = await serverClient.models.Blog.list({
-    authMode: "iam",
-  });
+  try {
+    const { data, errors } = await serverClient.models.Blog.list({
+      authMode: "iam",
+    });
 
-  await assertNoErrors(errors);
+    await assertNoErrors(errors);
 
-  return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
+    return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
+  } catch (error) {
+    if (!isUnauthorizedError(error)) {
+      throw error;
+    }
+
+    const { data, errors } = await serverClient.models.Blog.list({
+      authMode: "userPool",
+    });
+
+    await assertNoErrors(errors);
+
+    return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
+  }
 }
 
 export async function listBlogsForAdmin() {
@@ -60,16 +78,33 @@ export async function listBlogsForAdmin() {
 }
 
 export async function getBlogBySlugPublic(slug: string) {
-  const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
-    { slug },
-    {
-      authMode: "iam",
-    },
-  );
+  try {
+    const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
+      { slug },
+      {
+        authMode: "iam",
+      },
+    );
 
-  await assertNoErrors(errors);
+    await assertNoErrors(errors);
 
-  return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
+    return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
+  } catch (error) {
+    if (!isUnauthorizedError(error)) {
+      throw error;
+    }
+
+    const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
+      { slug },
+      {
+        authMode: "userPool",
+      },
+    );
+
+    await assertNoErrors(errors);
+
+    return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
+  }
 }
 
 export async function getBlogBySlugForAdmin(slug: string) {
