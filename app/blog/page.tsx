@@ -28,6 +28,7 @@ export default async function BlogIndexPage() {
               excerpt: "Future reader flow: fetch the blog record by slug, resolve S3 path, render.",
               authorName: blog.authorName,
               tags: blog.tags,
+              publishedAt: blog.publishedAt,
             }} 
           />
         ))}
