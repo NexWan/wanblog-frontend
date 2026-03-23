@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "us-east-2_KOunzIcRG",
+    "user_pool_id": "us-east-2_OG1IkEXdT",
     "aws_region": "us-east-2",
-    "user_pool_client_id": "145e0urnn312978kms69v1ihk1",
-    "identity_pool_id": "us-east-2:39fff6cd-73a2-4506-8e81-4af0b242ec7e",
+    "user_pool_client_id": "6it25a0iqns9uu78ivqrv4cmdi",
+    "identity_pool_id": "us-east-2:474f5ac5-adfe-4102-bcd0-061fe2e1ee3c",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email",
@@ -38,7 +38,7 @@
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://nvkxchpxxjcudesptb5wzzf7tq.appsync-api.us-east-2.amazonaws.com/graphql",
+    "url": "https://aqtqghronze2jdedgwe3ehocl4.appsync-api.us-east-2.amazonaws.com/graphql",
     "aws_region": "us-east-2",
     "default_authorization_type": "AWS_IAM",
     "authorization_types": [
@@ -199,6 +199,17 @@
                     "provider": "userPools",
                     "allow": "groups",
                     "operations": [
+                      "read"
+                    ],
+                    "groups": [
+                      "guest"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
                       "create",
                       "read",
                       "update",
@@ -299,6 +310,17 @@
                     "provider": "iam",
                     "operations": [
                       "read"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read"
+                    ],
+                    "groups": [
+                      "guest"
                     ]
                   },
                   {
@@ -410,6 +432,17 @@
                     ]
                   },
                   {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read"
+                    ],
+                    "groups": [
+                      "guest"
+                    ]
+                  },
+                  {
                     "allow": "private",
                     "operations": [
                       "create"
@@ -464,11 +497,11 @@
   },
   "storage": {
     "aws_region": "us-east-2",
-    "bucket_name": "amplify-d2x2q216xa9tje-ma-blogcontentbucket7a57611-9hgm21vxmnwl",
+    "bucket_name": "amplify-d2x2q216xa9tje-de-blogcontentbucket7a57611-fa7helncbibo",
     "buckets": [
       {
         "name": "blogContent",
-        "bucket_name": "amplify-d2x2q216xa9tje-ma-blogcontentbucket7a57611-9hgm21vxmnwl",
+        "bucket_name": "amplify-d2x2q216xa9tje-de-blogcontentbucket7a57611-fa7helncbibo",
         "aws_region": "us-east-2",
         "paths": {
           "drafts/*": {
