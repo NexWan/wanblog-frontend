@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { generateServerClientUsingCookies } from "@aws-amplify/adapter-nextjs/api";
 import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
-import type { Blog } from "@/lib/blog-types";
+import { normalizeBlogPublishedAt, type Blog } from "@/lib/blog-types";
 
 const outputs = getServerAmplifyOutputs();
 
@@ -46,7 +46,7 @@ export async function listBlogsPublic() {
 
   await assertNoErrors(errors);
 
-  return data as Blog[];
+  return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
 }
 
 export async function listBlogsForAdmin() {
@@ -56,7 +56,7 @@ export async function listBlogsForAdmin() {
 
   await assertNoErrors(errors);
 
-  return data as Blog[];
+  return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
 }
 
 export async function getBlogBySlugPublic(slug: string) {
@@ -69,7 +69,7 @@ export async function getBlogBySlugPublic(slug: string) {
 
   await assertNoErrors(errors);
 
-  return (data[0] as Blog | undefined) ?? null;
+  return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
 }
 
 export async function getBlogBySlugForAdmin(slug: string) {
@@ -82,7 +82,7 @@ export async function getBlogBySlugForAdmin(slug: string) {
 
   await assertNoErrors(errors);
 
-  return (data[0] as Blog | undefined) ?? null;
+  return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
 }
 
 export async function getBlogByIdForAdmin(blogId: string): Promise<Blog | null> {
@@ -96,8 +96,8 @@ export async function getBlogByIdForAdmin(blogId: string): Promise<Blog | null> 
   await assertNoErrors(errors);
 
   if (Array.isArray(data)) {
-    return (data[0] as Blog | undefined) ?? null;
+    return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
   }
 
-  return (data as Blog | null) ?? null;
+  return data ? normalizeBlogPublishedAt(data as Blog) : null;
 }

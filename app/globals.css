@@ -129,12 +129,59 @@
   @apply text-on-surface/90 leading-relaxed;
 }
 
+.prose-editorial h1 {
+  margin-top: 3.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--color-primary);
+  font-family: var(--font-headline);
+  font-size: var(--text-4xl);
+  font-weight: var(--font-weight-black);
+  letter-spacing: var(--tracking-tight);
+  line-height: 0.95;
+}
+
+@media (width >= 48rem) {
+  .prose-editorial h1 {
+    font-size: var(--text-5xl);
+    line-height: 1;
+  }
+}
+
 .prose-editorial h2 {
   @apply font-headline text-3xl font-bold text-primary mt-12 mb-4 tracking-tight;
 }
 
+.prose-editorial h3 {
+  @apply font-headline text-2xl font-bold text-on-surface mt-10 mb-4 tracking-tight;
+}
+
+.prose-editorial h4 {
+  @apply font-label text-sm font-bold uppercase tracking-[0.22em] text-on-surface-variant mt-8 mb-3;
+}
+
 .prose-editorial p {
   @apply mb-6;
+}
+
+.prose-editorial ul,
+.prose-editorial ol {
+  @apply mb-6 pl-6;
+}
+
+.prose-editorial ul {
+  @apply list-disc;
+}
+
+.prose-editorial ol {
+  @apply list-decimal;
+}
+
+.prose-editorial li {
+  @apply mb-2 pl-1;
+}
+
+.prose-editorial a {
+  @apply text-primary underline decoration-primary/35 underline-offset-4 transition hover:text-tertiary;
 }
 
 .prose-editorial blockquote {

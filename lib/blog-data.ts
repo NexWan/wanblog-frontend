@@ -1,5 +1,12 @@
 import { generateClient } from "aws-amplify/data";
-import type { Blog, BlogStatus, CreateBlogInput, DeleteBlogInput } from "@/lib/blog-types";
+import {
+  normalizeBlogPublishedAt,
+  serializeBlogPublishedAt,
+  type Blog,
+  type BlogStatus,
+  type CreateBlogInput,
+  type DeleteBlogInput,
+} from "@/lib/blog-types";
 
 export type { Blog, BlogStatus, CreateBlogInput, DeleteBlogInput };
 
@@ -25,19 +32,27 @@ type BlogClient = {
 const client = generateClient() as unknown as BlogClient;
 
 export async function postBlog(blog: Blog) {
-  const { data, errors } = await client.models.Blog.create({
+  const { data, errors } = await client.models.Blog.create(serializeBlogPublishedAt({
     ...blog,
-  }, {
+  }), {
     authMode: "userPool",
   });
 
-  return { data: data as Blog | null, errors };
+  return {
+    data: data ? normalizeBlogPublishedAt(data as Blog) : null,
+    errors,
+  };
 }
 
 export async function updateBlog(blogId: string, updates: Partial<CreateBlogInput>) {
   const { data, errors } = await client.models.Blog.update({
     blogId,
-    ...updates,
+    ...(("status" in updates && updates.status === "DRAFT")
+      ? serializeBlogPublishedAt({
+          ...updates,
+          status: "DRAFT",
+        })
+      : updates),
   }, {
     authMode: "userPool",
   });
@@ -46,11 +61,14 @@ export async function updateBlog(blogId: string, updates: Partial<CreateBlogInpu
     throw new Error(errors.map((error: { message: string }) => error.message).join(", "));
   }
 
-  return { data: data as Blog | null, errors };
+  return {
+    data: data ? normalizeBlogPublishedAt(data as Blog) : null,
+    errors,
+  };
 }
 
 export async function createBlog(blog: CreateBlogInput) {
-  const { data, errors } = await client.models.Blog.create(blog, {
+  const { data, errors } = await client.models.Blog.create(serializeBlogPublishedAt(blog), {
     authMode: "userPool",
   });
 
@@ -58,7 +76,7 @@ export async function createBlog(blog: CreateBlogInput) {
     throw new Error(errors.map((error: { message: string }) => error.message).join(", "));
   }
 
-  return data as Blog | null;
+  return data ? normalizeBlogPublishedAt(data as Blog) : null;
 }
 
 export async function deleteBlog(blog: DeleteBlogInput) {
