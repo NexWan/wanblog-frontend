@@ -18,6 +18,10 @@ type BlogServerClient = {
         input: { slug: string },
         options: { authMode: "apiKey" | "userPool" }
       ) => Promise<{ data: Blog[]; errors?: { message: string }[] }>;
+      listBlogsByStatus: (
+        input: { status: string },
+        options: { authMode: "apiKey" | "userPool"; sortDirection?: "ASC" | "DESC"; limit?: number }
+      ) => Promise<{ data: Blog[]; errors?: { message: string }[] }>;
       get: (
         input: { blogId: string },
         options: { authMode: "userPool" }
@@ -37,6 +41,17 @@ async function assertNoErrors(
   if (errors?.length) {
     throw new Error(errors.map((error) => error.message).join(", "));
   }
+}
+
+export async function listLatestPublishedBlogs(limit = 4) {
+  const { data, errors } = await serverClient.models.Blog.listBlogsByStatus(
+    { status: "PUBLISHED" },
+    { authMode: "apiKey", sortDirection: "DESC", limit },
+  );
+
+  await assertNoErrors(errors);
+
+  return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
 }
 
 export async function listBlogsPublic() {

@@ -1,28 +1,40 @@
 import Link from "next/link";
 import { getCurrentUserGroups, isCurrentUserAdmin } from "@/lib/auth";
-import { SAMPLE_POSTS } from "@/lib/utils";
+import { listLatestPublishedBlogs } from "@/lib/blog-data.server";
+import { resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
+import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
 import PostCard from "@/components/PostCard";
 
 export default async function Home() {
-  const [groups, isAdmin] = await Promise.all([
+  const [groups, isAdmin, latestBlogs] = await Promise.all([
     getCurrentUserGroups(),
     isCurrentUserAdmin(),
+    listLatestPublishedBlogs(4),
   ]);
 
-  const featuredPost = SAMPLE_POSTS.find((post) => post.featured) || SAMPLE_POSTS[0];
-  const recentPosts = SAMPLE_POSTS.filter((post) => !post.featured);
+  const uniqueAuthorIds = [...new Set(latestBlogs.map((b) => b.authorUserId))];
+  const [coverResults, profileResults] = await Promise.all([
+    Promise.all(latestBlogs.map((blog) => resolveCoverImageUrlServer(blog.coverImagePath ?? null))),
+    Promise.all(uniqueAuthorIds.map((id) => getProfileByUserIdPublic(id).catch(() => null))),
+  ]);
+
+  const profileMap = Object.fromEntries(
+    uniqueAuthorIds.map((id, i) => [id, profileResults[i]])
+  );
+
+  const recentPosts = latestBlogs.map((blog, i) => {
+    const profile = profileMap[blog.authorUserId];
+    const authorName = profile
+      ? `${profile.displayName ?? profile.username} (${profile.username})`
+      : blog.authorName;
+    return { ...blog, coverImageUrl: coverResults[i], authorName };
+  });
 
   return (
     <main className="px-6 max-w-7xl mx-auto">
       {/* Hero Section */}
       <section className="mb-20">
         <Link href={`/blog`} className="relative group block overflow-hidden rounded-xl bg-surface-container h-[716px] flex items-end">
-          <img 
-            src={featuredPost.image} 
-            alt={featuredPost.title}
-            referrerPolicy="no-referrer"
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-60 grayscale"
-          />
           <div className="absolute inset-0 bg-gradient-to-t from-surface-dim via-transparent to-transparent"></div>
           <div className="relative z-10 p-8 md:p-16 max-w-4xl">
             <div className="flex items-center gap-4 mb-6">
@@ -51,22 +63,23 @@ export default async function Home() {
         {/* Main Content */}
         <div className="lg:col-span-8">
           <div className="flex items-center justify-between mb-12">
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Concept Preview</h2>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">Latest Posts</h2>
             <div className="h-px flex-grow mx-8 bg-outline-variant/20 hidden md:block"></div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16">
             {recentPosts.map((post) => (
               <PostCard
-                key={post.id}
+                key={post.blogId}
                 post={{
                   title: post.title,
                   slug: post.slug,
                   excerpt: post.excerpt,
-                  authorName: post.author.name,
+                  authorName: post.authorName,
                   tags: post.tags,
-                  publishedAt: new Date().toISOString(),
-                  blogId: post.id,
+                  publishedAt: post.publishedAt ?? new Date().toISOString(),
+                  coverImageUrl: post.coverImageUrl,
+                  blogId: post.blogId,
                 }}
               />
             ))}
