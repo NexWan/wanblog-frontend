@@ -22,6 +22,10 @@ type BlogServerClient = {
         input: { status: string },
         options: { authMode: "apiKey" | "userPool"; sortDirection?: "ASC" | "DESC"; limit?: number }
       ) => Promise<{ data: Blog[]; errors?: { message: string }[] }>;
+      listBlogsByAuthorUserId: (
+        input: { authorUserId: string },
+        options: { authMode: "apiKey" | "userPool"; sortDirection?: "ASC" | "DESC" }
+      ) => Promise<{ data: Blog[]; errors?: { message: string }[] }>;
       get: (
         input: { blogId: string },
         options: { authMode: "userPool" }
@@ -94,6 +98,19 @@ export async function getBlogBySlugForAdmin(slug: string) {
   await assertNoErrors(errors);
 
   return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
+}
+
+export async function listPublishedBlogsByAuthor(authorUserId: string): Promise<Blog[]> {
+  const { data, errors } = await serverClient.models.Blog.listBlogsByAuthorUserId(
+    { authorUserId },
+    { authMode: "apiKey", sortDirection: "DESC" },
+  );
+
+  await assertNoErrors(errors);
+
+  return (data as Blog[])
+    .filter((blog) => blog.status === "PUBLISHED")
+    .map((blog) => normalizeBlogPublishedAt(blog));
 }
 
 export async function getBlogByIdForAdmin(blogId: string): Promise<Blog | null> {

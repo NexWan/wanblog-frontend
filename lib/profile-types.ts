@@ -4,6 +4,10 @@ export type UserProfile = {
   displayName?: string | null;
   bio?: string | null;
   avatarPath?: string | null;
+  twitterUrl?: string | null;
+  instagramUrl?: string | null;
+  githubUrl?: string | null;
+  websiteUrl?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
@@ -14,6 +18,10 @@ export type CreateProfileInput = {
   displayName?: string | null;
   bio?: string | null;
   avatarPath?: string | null;
+  twitterUrl?: string | null;
+  instagramUrl?: string | null;
+  githubUrl?: string | null;
+  websiteUrl?: string | null;
 };
 
 export type UpdateProfileInput = {
@@ -21,4 +29,8 @@ export type UpdateProfileInput = {
   displayName?: string | null;
   bio?: string | null;
   avatarPath?: string | null;
+  twitterUrl?: string | null;
+  instagramUrl?: string | null;
+  githubUrl?: string | null;
+  websiteUrl?: string | null;
 };

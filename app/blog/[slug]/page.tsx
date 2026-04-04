@@ -1,3 +1,4 @@
+import Link from "next/link";
 import TagList from "@/components/blog/TagList";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
 import CommentSection from "@/components/blog/CommentSection";
@@ -100,7 +101,13 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               />
               <div>
                 <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Written by</p>
-                <p className="font-body font-bold text-primary">{authorLabel}</p>
+                {authorProfile ? (
+                  <Link href={`/user/${authorProfile.username}`} className="font-body font-bold text-primary hover:underline">
+                    {authorLabel}
+                  </Link>
+                ) : (
+                  <p className="font-body font-bold text-primary">{authorLabel}</p>
+                )}
               </div>
             </div>
             <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>

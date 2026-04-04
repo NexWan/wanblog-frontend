@@ -20,6 +20,10 @@ export default function ProfileEditor({ initialProfile, currentUserId }: Profile
   const [displayName, setDisplayName] = useState(initialProfile.displayName ?? "");
   const [bio, setBio] = useState(initialProfile.bio ?? "");
   const [avatarPath, setAvatarPath] = useState(initialProfile.avatarPath ?? "");
+  const [twitterUrl, setTwitterUrl] = useState(initialProfile.twitterUrl ?? "");
+  const [instagramUrl, setInstagramUrl] = useState(initialProfile.instagramUrl ?? "");
+  const [githubUrl, setGithubUrl] = useState(initialProfile.githubUrl ?? "");
+  const [websiteUrl, setWebsiteUrl] = useState(initialProfile.websiteUrl ?? "");
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,6 +69,10 @@ export default function ProfileEditor({ initialProfile, currentUserId }: Profile
         displayName: displayName.trim() || null,
         bio: bio.trim() || null,
         avatarPath: avatarPath || null,
+        twitterUrl: twitterUrl.trim() || null,
+        instagramUrl: instagramUrl.trim() || null,
+        githubUrl: githubUrl.trim() || null,
+        websiteUrl: websiteUrl.trim() || null,
       });
       setProfileSuccess("Profile saved.");
       startTransition(() => router.refresh());
@@ -193,6 +201,51 @@ export default function ProfileEditor({ initialProfile, currentUserId }: Profile
             rows={4}
             className={cn(inputClass, "resize-none")}
           />
+        </div>
+
+        {/* Socials */}
+        <div className="border-t border-outline-variant/15 pt-6 flex flex-col gap-4">
+          <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant">Socials</p>
+          <div>
+            <label className="mb-1.5 block font-label text-xs uppercase tracking-widest text-on-surface-variant">X / Twitter</label>
+            <input
+              type="url"
+              value={twitterUrl}
+              onChange={(e) => setTwitterUrl(e.target.value)}
+              placeholder="https://x.com/yourhandle"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block font-label text-xs uppercase tracking-widest text-on-surface-variant">Instagram</label>
+            <input
+              type="url"
+              value={instagramUrl}
+              onChange={(e) => setInstagramUrl(e.target.value)}
+              placeholder="https://instagram.com/yourhandle"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block font-label text-xs uppercase tracking-widest text-on-surface-variant">GitHub</label>
+            <input
+              type="url"
+              value={githubUrl}
+              onChange={(e) => setGithubUrl(e.target.value)}
+              placeholder="https://github.com/yourhandle"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block font-label text-xs uppercase tracking-widest text-on-surface-variant">Website</label>
+            <input
+              type="url"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://yoursite.com"
+              className={inputClass}
+            />
+          </div>
         </div>
 
         {profileError && (
