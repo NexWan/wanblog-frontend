@@ -1,6 +1,5 @@
 import "server-only";
 
-import { cookies } from "next/headers";
 import { getUrl } from "aws-amplify/storage/server";
 import { runWithAmplifyServerContext } from "@/lib/amplifyServerUtils";
 import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
@@ -13,9 +12,21 @@ const BLOG_STORAGE_BUCKET = {
   region: storageConfig.aws_region,
 };
 
+// Empty cookie store — causes runWithAmplifyServerContext to use guest/unauthenticated
+// Identity Pool credentials. Blog content (blogs/*) is publicly readable by guests, so
+// this avoids 403s for authenticated non-admin users whose Cognito role may lack S3 access.
+const guestCookies = () =>
+  ({
+    get: () => undefined,
+    getAll: () => [],
+    has: () => false,
+    size: 0,
+    [Symbol.iterator]: function* () {},
+  }) as unknown as ReturnType<typeof import("next/headers")["cookies"]>;
+
 export async function resolveAmplifyImageUrlServer(path: string) {
   return runWithAmplifyServerContext({
-    nextServerContext: { cookies },
+    nextServerContext: { cookies: guestCookies },
     operation: async (contextSpec) => {
       const result = await getUrl(contextSpec, {
         path,
