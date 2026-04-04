@@ -10,6 +10,7 @@ import { getMarkdownContentServer, resolveCoverImageUrlServer } from "@/lib/blog
 import { listCommentsByBlogId } from "@/lib/comment-data.server";
 import { getLikeCountByBlogId } from "@/lib/like-data.server";
 import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
+import { resolveAvatarUrlServer } from "@/lib/profile-storage.server";
 
 type BlogDetailPageProps = {
   params: Promise<{
@@ -49,6 +50,19 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     getLikeCountByBlogId(blog.blogId),
     getProfileByUserIdPublic(blog.authorUserId),
   ]);
+  const authorAvatarUrl = await resolveAvatarUrlServer(authorProfile?.avatarPath);
+
+  const uniqueCommentAuthorIds = [...new Set(comments.map((c) => c.authorUserId))];
+  const commentAuthorProfiles = await Promise.all(
+    uniqueCommentAuthorIds.map((id) => getProfileByUserIdPublic(id).catch(() => null))
+  );
+  const commentAvatarUrls: Record<string, string | null> = {};
+  await Promise.all(
+    uniqueCommentAuthorIds.map(async (userId, i) => {
+      const profile = commentAuthorProfiles[i];
+      commentAvatarUrls[userId] = await resolveAvatarUrlServer(profile?.avatarPath);
+    })
+  );
   const titleWords: string[] = blog.title.split(" ");
   const safeTags: string[] = (blog.tags ?? []).filter(
     (tag: string | null | undefined): tag is string => Boolean(tag)
@@ -96,6 +110,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
             <div className="flex items-center gap-3">
               <ProfileAvatar
                 avatarPath={authorProfile?.avatarPath}
+                resolvedUrl={authorAvatarUrl}
                 displayName={authorDisplayName}
                 size="md"
               />
@@ -139,7 +154,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       </article>
 
       <section className="max-w-3xl mx-auto px-6 mt-16 pb-8">
-        <CommentSection blogId={blog.blogId} initialComments={comments} />
+        <CommentSection blogId={blog.blogId} initialComments={comments} initialAvatarUrls={commentAvatarUrls} />
       </section>
     </main>
   );

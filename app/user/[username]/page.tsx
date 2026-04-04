@@ -5,6 +5,7 @@ import PostCard from "@/components/PostCard";
 import { getProfileByUsername } from "@/lib/profile-data.server";
 import { listPublishedBlogsByAuthor } from "@/lib/blog-data.server";
 import { resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
+import { resolveAvatarUrlServer } from "@/lib/profile-storage.server";
 import { getCurrentUserSub } from "@/lib/auth";
 import { runWithAmplifyServerContext } from "@/lib/amplifyServerUtils";
 import { fetchUserAttributes } from "aws-amplify/auth/server";
@@ -66,7 +67,10 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
     );
   }
 
-  const blogs = await listPublishedBlogsByAuthor(profile.userId);
+  const [blogs, profileAvatarUrl] = await Promise.all([
+    listPublishedBlogsByAuthor(profile.userId),
+    resolveAvatarUrlServer(profile.avatarPath),
+  ]);
   const coverResults = await Promise.all(
     blogs.map((blog) => resolveCoverImageUrlServer(blog.coverImagePath ?? null))
   );
@@ -85,6 +89,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
       <div className="flex flex-col items-center gap-5 text-center mb-16">
         <ProfileAvatar
           avatarPath={profile.avatarPath}
+          resolvedUrl={profileAvatarUrl}
           displayName={profile.displayName ?? profile.username}
           size="lg"
         />

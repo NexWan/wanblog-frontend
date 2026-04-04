@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 type ProfileAvatarProps = {
   avatarPath?: string | null;
+  /** Pre-resolved URL from the server. If provided (even null), skips client-side resolution. */
+  resolvedUrl?: string | null;
   displayName?: string | null;
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -28,26 +30,32 @@ function getInitials(displayName: string | null | undefined): string {
 
 export default function ProfileAvatar({
   avatarPath,
+  resolvedUrl: resolvedUrlProp,
   displayName,
   size = "md",
   className,
 }: ProfileAvatarProps) {
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+  const hasServerUrl = resolvedUrlProp !== undefined;
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(
+    hasServerUrl ? (resolvedUrlProp ?? null) : null,
+  );
 
   useEffect(() => {
+    if (hasServerUrl) return; // server already resolved it
+
     let cancelled = false;
 
     async function resolve() {
       const url = avatarPath
         ? await resolveAvatarUrl(avatarPath).catch(() => null)
-        : await Promise.resolve(null);
+        : null;
       if (!cancelled) setResolvedUrl(url);
     }
 
     resolve();
 
     return () => { cancelled = true; };
-  }, [avatarPath]);
+  }, [avatarPath, hasServerUrl]);
 
   const initials = getInitials(displayName);
   const label = displayName ? `${displayName} profile picture` : "User profile picture";

@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 type CommentSectionProps = {
   blogId: string;
   initialComments: Comment[];
+  /** Server-resolved avatar URLs keyed by authorUserId. Skips client-side resolution for initial comments. */
+  initialAvatarUrls?: Record<string, string | null>;
 };
 
 type AuthState = {
@@ -32,7 +34,7 @@ function formatDate(dateStr: string | null | undefined): string {
   });
 }
 
-export default function CommentSection({ blogId, initialComments }: CommentSectionProps) {
+export default function CommentSection({ blogId, initialComments, initialAvatarUrls }: CommentSectionProps) {
   const router = useRouter();
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [profileMap, setProfileMap] = useState<Record<string, UserProfile>>({});
@@ -204,6 +206,7 @@ export default function CommentSection({ blogId, initialComments }: CommentSecti
               <li key={comment.id} className="flex gap-4">
                 <ProfileAvatar
                   avatarPath={authorProfile?.avatarPath}
+                  resolvedUrl={initialAvatarUrls?.[comment.authorUserId]}
                   displayName={authorProfile?.displayName ?? comment.authorName}
                   size="sm"
                 />
