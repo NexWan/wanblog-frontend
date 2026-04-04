@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import LikeButton from './blog/LikeButton';
 
 type PostCardPost = {
   title: string;
@@ -9,6 +10,8 @@ type PostCardPost = {
   tags?: (string | null)[] | null;
   publishedAt?: string | null;
   coverImageUrl?: string | null;
+  likeCount?: number;
+  blogId: string; // Add blogId for LikeButton
 };
 
 export default function PostCard({ post }: { post: PostCardPost }) {
@@ -49,6 +52,7 @@ export default function PostCard({ post }: { post: PostCardPost }) {
       <p className="text-on-surface-variant font-body leading-relaxed line-clamp-2">
         {excerpt}
       </p>
+      <LikeButton blogId={post.blogId} initialLikeCount={post.likeCount ?? 0} isClickable={false} />
     </Link>
   );
 }

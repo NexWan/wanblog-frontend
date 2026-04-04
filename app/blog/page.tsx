@@ -2,6 +2,7 @@ import PostCard from "@/components/PostCard";
 import { isCurrentUserAdmin } from "@/lib/auth";
 import { listBlogsForAdmin, listBlogsPublic } from "@/lib/blog-data.server";
 import { resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
+import { getLikeCountByBlogId } from "@/lib/like-data.server";
 import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
 
 export default async function BlogIndexPage() {
@@ -40,7 +41,7 @@ export default async function BlogIndexPage() {
       </p>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-        {blogsWithCovers.map((blog) => (
+        {blogsWithCovers.map(async (blog) => (
           <PostCard
             key={blog.blogId}
             post={{
@@ -51,6 +52,8 @@ export default async function BlogIndexPage() {
               tags: blog.tags,
               publishedAt: blog.publishedAt,
               coverImageUrl: blog.coverImageUrl,
+              likeCount: await getLikeCountByBlogId(blog.blogId),
+              blogId: blog.blogId, // Pass blogId for LikeButton
             }}
           />
         ))}

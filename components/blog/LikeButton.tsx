@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils";
 type LikeButtonProps = {
   blogId: string;
   initialLikeCount: number;
+  isClickable?: boolean;
 };
 
-export default function LikeButton({ blogId, initialLikeCount }: LikeButtonProps) {
+export default function LikeButton({ blogId, initialLikeCount, isClickable=true }: LikeButtonProps) {
   const router = useRouter();
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [hasLiked, setHasLiked] = useState(false);
@@ -73,7 +74,7 @@ export default function LikeButton({ blogId, initialLikeCount }: LikeButtonProps
     <button
       type="button"
       onClick={handleToggle}
-      disabled={isLoading}
+      disabled={isLoading || !isClickable}
       aria-label={hasLiked ? "Unlike this post" : "Like this post"}
       className={cn(
         "inline-flex items-center gap-1.5 font-label text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50",
