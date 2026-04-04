@@ -10,9 +10,12 @@ import {
   type BlogMediaItem,
   createBlogId,
   publishDraftAssets,
+  publishCoverImage,
+  resolveAmplifyImageUrl,
   toAmplifyImageMarkdown,
   uploadBlogImage,
   uploadBlogMarkdown,
+  uploadCoverImage,
 } from "@/lib/blog-storage";
 
 type BlogEditorShellProps = {
@@ -25,6 +28,7 @@ type BlogEditorShellProps = {
   initialContentPath?: string;
   initialStatus?: BlogStatus;
   initialPublishedAt?: string | null;
+  initialCoverImagePath?: string | null;
 };
 
 export default function BlogEditorShell({
@@ -37,6 +41,7 @@ export default function BlogEditorShell({
   initialContentPath,
   initialStatus = "DRAFT",
   initialPublishedAt = null,
+  initialCoverImagePath = null,
 }: BlogEditorShellProps) {
   const isEditingExistingBlog = Boolean(initialBlogId);
   const [blogId, setBlogId] = useState(initialBlogId ?? "");
@@ -57,6 +62,10 @@ export default function BlogEditorShell({
   const [isWorking, setIsWorking] = useState(false);
   const [existingImages, setExistingImages] = useState<BlogMediaItem[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [draftCoverPath, setDraftCoverPath] = useState<string | null>(initialCoverImagePath ?? null);
+  const [publishedCoverPath, setPublishedCoverPath] = useState<string | null>(null);
+  const [selectedCoverImage, setSelectedCoverImage] = useState<File | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
 
   async function refreshExistingImages(currentBlogId: string) {
     setIsLoadingImages(true);
@@ -117,6 +126,55 @@ export default function BlogEditorShell({
     };
   }, [blogId]);
 
+  useEffect(() => {
+    if (!initialCoverImagePath) return;
+
+    resolveAmplifyImageUrl(initialCoverImagePath)
+      .then(({ url }) => setCoverPreviewUrl(url))
+      .catch(() => {});
+  }, [initialCoverImagePath]);
+
+  async function handleCoverImageUpload() {
+    if (!blogId) {
+      setStatusMessage("Generating a draft ID. Try again in a moment.");
+      return;
+    }
+
+    if (!selectedCoverImage) {
+      setStatusMessage("Choose a cover image before uploading.");
+      return;
+    }
+
+    setIsWorking(true);
+
+    try {
+      const { path } = await uploadCoverImage({ blogId, file: selectedCoverImage });
+      const { url } = await resolveAmplifyImageUrl(path);
+
+      setDraftCoverPath(path);
+      setCoverPreviewUrl(url);
+      setSelectedCoverImage(null);
+      setStatusMessage(`Cover image uploaded to ${path}.`);
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error, "Cover image upload failed."));
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  async function handleSetCoverFromExisting(image: BlogMediaItem) {
+    setDraftCoverPath(image.path);
+
+    try {
+      const { url } = await resolveAmplifyImageUrl(image.path);
+      setCoverPreviewUrl(url);
+    } catch {
+      setCoverPreviewUrl(image.url);
+    }
+
+    setStatusMessage(`Cover set to ${image.path}.`);
+  }
+
   function handleExistingImageInsert(image: BlogMediaItem) {
     const altText = imageAltText.trim() || image.altText;
 
@@ -165,7 +223,10 @@ export default function BlogEditorShell({
         excerpt: excerpt || null,
         tags: normalizedTags.length ? normalizedTags : null,
         contentPath: contentPathToSave,
-        coverImagePath: null,
+        coverImagePath:
+          blogStatus === "PUBLISHED"
+            ? (publishedCoverPath ?? (initialStatus === "PUBLISHED" ? initialCoverImagePath ?? null : null))
+            : (draftCoverPath ?? initialCoverImagePath ?? null),
         authorName,
         authorUserId: user.userId,
         status: blogStatus,
@@ -273,11 +334,18 @@ export default function BlogEditorShell({
     try {
       const result = await publishDraftAssets(blogId, markdown);
 
+      let newPublishedCoverPath: string | null = null;
+
+      if (draftCoverPath) {
+        newPublishedCoverPath = await publishCoverImage(blogId, draftCoverPath);
+        setPublishedCoverPath(newPublishedCoverPath);
+      }
+
       startTransition(() => {
         setPublishedContentPath(result.contentPath);
         setBlogStatus("PUBLISHED");
         setStatusMessage(
-          `Published assets prepared under blogs/${blogId}/... and the editor is now set to PUBLISHED.`
+          `Published assets prepared under blogs/${blogId}/...${newPublishedCoverPath ? ` Cover image published to ${newPublishedCoverPath}.` : ""} Editor set to PUBLISHED.`
         );
       });
     } catch (error) {
@@ -378,6 +446,40 @@ export default function BlogEditorShell({
             <h3 className="font-label text-xs uppercase tracking-[0.2em] font-bold">Media Upload</h3>
           </div>
           <div className="bg-surface-container-low border border-outline-variant/10 rounded-xl p-6">
+            {/* Cover Image */}
+            <div className="mb-6 pb-6 border-b border-outline-variant/10">
+              <p className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60 mb-3">Cover Image</p>
+              <div className="flex items-start gap-4">
+                <div className="aspect-[4/5] w-24 shrink-0 rounded-xl overflow-hidden bg-surface-container border border-outline-variant/20 flex items-center justify-center">
+                  {coverPreviewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={coverPreviewUrl} alt="Cover preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-label text-[8px] uppercase tracking-widest text-on-surface-variant/40 text-center px-1">No cover set</span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-3 flex-1">
+                  <label className="grid gap-2 text-sm text-on-surface-variant">
+                    <span className="font-label text-[10px] uppercase tracking-widest">Select Cover</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setSelectedCoverImage(e.target.files?.[0] ?? null)}
+                      className="block rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-xs"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleCoverImageUpload}
+                    disabled={isWorking || !selectedCoverImage}
+                    className="rounded-lg border border-outline-variant/30 px-4 py-2 text-xs font-bold font-label tracking-widest text-on-surface transition hover:bg-surface-bright disabled:opacity-50"
+                  >
+                    Upload Cover
+                  </button>
+                </div>
+              </div>
+            </div>
+
              <div className="grid gap-4 md:grid-cols-2 mb-4">
                 <label className="grid gap-2 text-sm text-on-surface-variant">
                   <span className="font-label text-[10px] uppercase tracking-widest">Select Image</span>
@@ -433,6 +535,13 @@ export default function BlogEditorShell({
                              className="rounded bg-surface-bright px-3 py-2 text-xs text-on-surface hover:text-primary transition-colors text-center font-label uppercase tracking-wider w-full"
                            >
                              Insert
+                           </button>
+                           <button
+                             type="button"
+                             onClick={() => handleSetCoverFromExisting(image)}
+                             className="rounded border border-tertiary/20 bg-tertiary/5 px-3 py-2 text-xs text-tertiary hover:bg-tertiary/10 transition-colors text-center font-label uppercase tracking-wider w-full"
+                           >
+                             Set as Cover
                            </button>
                          </div>
                       </div>

@@ -10,13 +10,13 @@ const outputs = getServerAmplifyOutputs();
 type BlogServerClient = {
   models: {
     Blog: {
-      list: (options: { authMode: "iam" | "userPool" }) => Promise<{
+      list: (options: { authMode: "apiKey" | "userPool" }) => Promise<{
         data: Blog[];
         errors?: { message: string }[];
       }>;
       listBlogsBySlug: (
         input: { slug: string },
-        options: { authMode: "iam" | "userPool" }
+        options: { authMode: "apiKey" | "userPool" }
       ) => Promise<{ data: Blog[]; errors?: { message: string }[] }>;
       get: (
         input: { blogId: string },
@@ -39,32 +39,14 @@ async function assertNoErrors(
   }
 }
 
-function isUnauthorizedError(error: unknown) {
-  return error instanceof Error && error.message.toLowerCase().includes("unauthorized");
-}
-
 export async function listBlogsPublic() {
-  try {
-    const { data, errors } = await serverClient.models.Blog.list({
-      authMode: "iam",
-    });
+  const { data, errors } = await serverClient.models.Blog.list({
+    authMode: "apiKey",
+  });
 
-    await assertNoErrors(errors);
+  await assertNoErrors(errors);
 
-    return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
-  } catch (error) {
-    if (!isUnauthorizedError(error)) {
-      throw error;
-    }
-
-    const { data, errors } = await serverClient.models.Blog.list({
-      authMode: "userPool",
-    });
-
-    await assertNoErrors(errors);
-
-    return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
-  }
+  return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
 }
 
 export async function listBlogsForAdmin() {
@@ -78,41 +60,20 @@ export async function listBlogsForAdmin() {
 }
 
 export async function getBlogBySlugPublic(slug: string) {
-  try {
-    const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
-      { slug },
-      {
-        authMode: "iam",
-      },
-    );
+  const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
+    { slug },
+    { authMode: "apiKey" },
+  );
 
-    await assertNoErrors(errors);
+  await assertNoErrors(errors);
 
-    return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
-  } catch (error) {
-    if (!isUnauthorizedError(error)) {
-      throw error;
-    }
-
-    const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
-      { slug },
-      {
-        authMode: "userPool",
-      },
-    );
-
-    await assertNoErrors(errors);
-
-    return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
-  }
+  return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
 }
 
 export async function getBlogBySlugForAdmin(slug: string) {
   const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
     { slug },
-    {
-      authMode: "userPool",
-    },
+    { authMode: "userPool" },
   );
 
   await assertNoErrors(errors);
@@ -123,9 +84,7 @@ export async function getBlogBySlugForAdmin(slug: string) {
 export async function getBlogByIdForAdmin(blogId: string): Promise<Blog | null> {
   const { data, errors } = await serverClient.models.Blog.get(
     { blogId },
-    {
-      authMode: "userPool",
-    },
+    { authMode: "userPool" },
   );
 
   await assertNoErrors(errors);

@@ -2,7 +2,7 @@ import TagList from "@/components/blog/TagList";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
 import { getBlogBySlugForAdmin, getBlogBySlugPublic } from "@/lib/blog-data.server";
 import { isCurrentUserAdmin } from "@/lib/auth";
-import { getMarkdownContentServer } from "@/lib/blog-storage.server";
+import { getMarkdownContentServer, resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
 
 type BlogDetailPageProps = {
   params: Promise<{
@@ -36,6 +36,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   }
 
   const markdownContent = await getMarkdownContentServer(blog.contentPath);
+  const coverImageUrl = await resolveCoverImageUrlServer(blog.coverImagePath ?? null);
   const titleWords: string[] = blog.title.split(" ");
   const safeTags: string[] = (blog.tags ?? []).filter(
     (tag: string | null | undefined): tag is string => Boolean(tag)
@@ -47,8 +48,19 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   return (
     <main className="pb-20">
       <header className="max-w-5xl mx-auto px-6 mb-16 pt-8">
-        <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden mb-12 editorial-shadow bg-surface-container-high flex items-center justify-center text-on-surface-variant">
-           <span className="font-headline tracking-widest uppercase">No cover image available</span>
+        <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden mb-12 editorial-shadow bg-surface-container-high">
+          {coverImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverImageUrl}
+              alt={`Cover image for ${blog.title}`}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
+              <span className="font-headline tracking-widest uppercase">No cover image available</span>
+            </div>
+          )}
         </div>
 
         <div className="max-w-3xl mx-auto">

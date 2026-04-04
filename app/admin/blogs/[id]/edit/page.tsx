@@ -58,6 +58,7 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
           initialContentPath={blog.contentPath}
           initialStatus={blog.status}
           initialPublishedAt={blog.publishedAt ?? null}
+          initialCoverImagePath={blog.coverImagePath ?? null}
         />
       </div>
     </main>

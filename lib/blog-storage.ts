@@ -181,6 +181,52 @@ export async function resolveMarkdownAmplifyImages(markdown: string) {
   return resolvedMarkdown;
 }
 
+export function buildCoverImagePath({
+  blogId,
+  fileName,
+  scope = "drafts",
+}: {
+  blogId: string;
+  fileName: string;
+  scope?: BlogStorageScope;
+}) {
+  return `${scope}/${blogId}/cover/${crypto.randomUUID()}-${sanitizeFilename(fileName)}`;
+}
+
+export async function uploadCoverImage({
+  blogId,
+  file,
+  scope = "drafts",
+}: {
+  blogId: string;
+  file: File;
+  scope?: BlogStorageScope;
+}) {
+  const path = buildCoverImagePath({ blogId, fileName: file.name, scope });
+
+  await uploadData({
+    path,
+    data: file,
+    options: {
+      bucket: BLOG_STORAGE_BUCKET,
+      contentType: file.type || "application/octet-stream",
+    },
+  }).result;
+
+  return { path };
+}
+
+export async function publishCoverImage(blogId: string, draftCoverPath: string) {
+  const publishedPath = draftCoverPath.replace(`drafts/${blogId}/`, `blogs/${blogId}/`);
+
+  await copy({
+    source: { path: draftCoverPath, bucket: BLOG_STORAGE_BUCKET },
+    destination: { path: publishedPath, bucket: BLOG_STORAGE_BUCKET },
+  });
+
+  return publishedPath;
+}
+
 export async function listBlogImages(blogId: string): Promise<BlogMediaItem[]> {
   const scopes: BlogStorageScope[] = ["drafts", "blogs"];
 

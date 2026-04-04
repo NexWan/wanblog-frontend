@@ -33,6 +33,18 @@ export async function resolveAmplifyImageUrlServer(path: string) {
   });
 }
 
+export async function resolveCoverImageUrlServer(
+  coverImagePath: string | null | undefined,
+): Promise<string | null> {
+  if (!coverImagePath) return null;
+  try {
+    const { url } = await resolveAmplifyImageUrlServer(coverImagePath);
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 export async function getMarkdownContentServer(path: string) {
   const { url } = await resolveAmplifyImageUrlServer(path);
   const response = await fetch(url);
