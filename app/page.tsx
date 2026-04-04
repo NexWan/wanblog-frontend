@@ -54,13 +54,17 @@ export default async function Home() {
               </span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-6 text-on-surface leading-tight tracking-tighter font-headline">
-              Draft ideas, publish stories, <span className="text-transparent bg-clip-text primary-gradient italic">grow WanBlog.</span>
+              Systems, data, and how things really work.{" "}
+              <span className="inline-block primary-gradient text-on-primary italic px-4 py-1 rounded-xl align-baseline leading-tight">
+                This is WanBlog
+              </span>
             </h1>
             <p className="text-lg md:text-xl text-on-surface-variant mb-8 max-w-2xl font-body leading-relaxed">
-              This is a simple landing area for now. We can turn it into your real homepage once you decide what content blocks, calls to action, and publishing flows you want.
+              This blog is a collection of deep dives into backend systems, parsing strategies, cloud architectures, and low-level implementations. 
+              I focus on understanding problems at their core — not just using tools, but building them.
             </p>
             <div className="primary-gradient text-on-primary w-fit px-8 py-4 rounded-lg font-bold flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-primary/20">
-              Browse public blog
+              Read articles
               <span className="text-xl leading-none">→</span>
             </div>
           </div>
