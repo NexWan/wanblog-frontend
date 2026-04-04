@@ -1,8 +1,14 @@
 import TagList from "@/components/blog/TagList";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
+import CommentSection from "@/components/blog/CommentSection";
+import LikeButton from "@/components/blog/LikeButton";
+import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import { getBlogBySlugForAdmin, getBlogBySlugPublic } from "@/lib/blog-data.server";
 import { isCurrentUserAdmin } from "@/lib/auth";
 import { getMarkdownContentServer, resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
+import { listCommentsByBlogId } from "@/lib/comment-data.server";
+import { getLikeCountByBlogId } from "@/lib/like-data.server";
+import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
 
 type BlogDetailPageProps = {
   params: Promise<{
@@ -35,15 +41,25 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     );
   }
 
-  const markdownContent = await getMarkdownContentServer(blog.contentPath);
-  const coverImageUrl = await resolveCoverImageUrlServer(blog.coverImagePath ?? null);
+  const [markdownContent, coverImageUrl, comments, likeCount, authorProfile] = await Promise.all([
+    getMarkdownContentServer(blog.contentPath),
+    resolveCoverImageUrlServer(blog.coverImagePath ?? null),
+    listCommentsByBlogId(blog.blogId),
+    getLikeCountByBlogId(blog.blogId),
+    getProfileByUserIdPublic(blog.authorUserId),
+  ]);
   const titleWords: string[] = blog.title.split(" ");
   const safeTags: string[] = (blog.tags ?? []).filter(
     (tag: string | null | undefined): tag is string => Boolean(tag)
   );
-  const date = blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString() : "Draft";
+  const date = blog.publishedAt
+    ? new Date(blog.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    : "Draft";
   const tag = safeTags.length > 0 ? safeTags[0] : "Blog";
-  const authorInitial = blog.authorName.charAt(0).toUpperCase();
+  const authorDisplayName = authorProfile?.displayName ?? blog.authorName;
+  const authorLabel = authorProfile
+    ? `${authorProfile.displayName ?? authorProfile.username} (${authorProfile.username})`
+    : blog.authorName;
 
   return (
     <main className="pb-20">
@@ -77,12 +93,14 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
           <div className="flex flex-col md:flex-row items-center gap-6 py-8 border-y border-outline-variant/15">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-surface-container-highest border border-primary/20 flex items-center justify-center overflow-hidden font-headline text-lg text-primary font-bold">
-                {authorInitial}
-              </div>
+              <ProfileAvatar
+                avatarPath={authorProfile?.avatarPath}
+                displayName={authorDisplayName}
+                size="md"
+              />
               <div>
                 <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Written by</p>
-                <p className="font-body font-bold text-primary">{blog.authorName}</p>
+                <p className="font-body font-bold text-primary">{authorLabel}</p>
               </div>
             </div>
             <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
@@ -100,6 +118,11 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Tags</p>
               <TagList tags={safeTags} />
             </div>
+            <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
+            <div className="flex flex-col items-center gap-1">
+              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Likes</p>
+              <LikeButton blogId={blog.blogId} initialLikeCount={likeCount} />
+            </div>
           </div>
         </div>
       </header>
@@ -107,6 +130,10 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       <article className="max-w-3xl mx-auto px-6">
         <MarkdownPreview source={markdownContent} />
       </article>
+
+      <section className="max-w-3xl mx-auto px-6 mt-16 pb-8">
+        <CommentSection blogId={blog.blogId} initialComments={comments} />
+      </section>
     </main>
   );
 }

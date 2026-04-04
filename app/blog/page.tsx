@@ -2,18 +2,31 @@ import PostCard from "@/components/PostCard";
 import { isCurrentUserAdmin } from "@/lib/auth";
 import { listBlogsForAdmin, listBlogsPublic } from "@/lib/blog-data.server";
 import { resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
+import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
 
 export default async function BlogIndexPage() {
   const isAdmin = await isCurrentUserAdmin();
   const blogs = isAdmin ? await listBlogsForAdmin() : await listBlogsPublic();
   const publishedBlogs = blogs.filter((blog) => isAdmin || blog.status === "PUBLISHED");
 
-  const blogsWithCovers = await Promise.all(
-    publishedBlogs.map(async (blog) => ({
-      ...blog,
-      coverImageUrl: await resolveCoverImageUrlServer(blog.coverImagePath ?? null),
-    }))
+  // Batch-fetch cover images and unique author profiles in parallel
+  const uniqueAuthorIds = [...new Set(publishedBlogs.map((b) => b.authorUserId))];
+  const [coverResults, profileResults] = await Promise.all([
+    Promise.all(publishedBlogs.map((blog) => resolveCoverImageUrlServer(blog.coverImagePath ?? null))),
+    Promise.all(uniqueAuthorIds.map((id) => getProfileByUserIdPublic(id).catch(() => null))),
+  ]);
+
+  const profileMap = Object.fromEntries(
+    uniqueAuthorIds.map((id, i) => [id, profileResults[i]])
   );
+
+  const blogsWithCovers = publishedBlogs.map((blog, i) => {
+    const profile = profileMap[blog.authorUserId];
+    const authorName = profile
+      ? `${profile.displayName ?? profile.username} (${profile.username})`
+      : blog.authorName;
+    return { ...blog, coverImageUrl: coverResults[i], authorName };
+  });
 
   return (
     <main className="px-6 max-w-7xl mx-auto mb-20">

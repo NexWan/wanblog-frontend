@@ -11,17 +11,21 @@ import {
 } from "aws-amplify/auth";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
+import ProfileAvatar from "@/components/profile/ProfileAvatar";
+import { getProfileByUserId } from "@/lib/profile-data";
 
 type HeaderAuthState = {
-  avatarUrl: string | null;
+  avatarPath: string | null;
   displayName: string | null;
+  profileUsername: string | null;
   isAdmin: boolean;
   isAuthenticated: boolean;
 };
 
 const DEFAULT_AUTH_STATE: HeaderAuthState = {
-  avatarUrl: null,
+  avatarPath: null,
   displayName: null,
+  profileUsername: null,
   isAdmin: false,
   isAuthenticated: false,
 };
@@ -42,57 +46,6 @@ function getDisplayName(
     user?.signInDetails?.loginId ??
     user?.username ??
     null
-  );
-}
-
-function getAvatarUrl(attributes: Awaited<ReturnType<typeof fetchUserAttributes>> | null) {
-  return attributes?.picture ?? attributes?.profile ?? null;
-}
-
-function getAvatarFallback(displayName: string | null) {
-  if (!displayName) {
-    return "WB";
-  }
-
-  const parts = displayName
-    .split(/[\s@._-]+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "WB";
-}
-
-function Avatar({
-  avatarUrl,
-  displayName,
-}: {
-  avatarUrl: string | null;
-  displayName: string | null;
-}) {
-  const avatarFallback = getAvatarFallback(displayName);
-
-  if (avatarUrl) {
-    return (
-      <div
-        role="img"
-        aria-label={displayName ? `${displayName} profile` : "User profile"}
-        className="h-10 w-10 shrink-0 rounded-full border border-white/10 bg-cover bg-center shadow-lg shadow-black/20"
-        style={{ backgroundImage: `url("${avatarUrl}")` }}
-      />
-    );
-  }
-
-  return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/15 font-label text-[11px] uppercase leading-none tracking-[0.2em] text-primary shadow-lg shadow-black/20">
-      <span
-        className={cn(
-          "block text-center leading-none",
-          avatarFallback.length === 1 ? "translate-x-px" : "pl-[0.12em]",
-        )}
-      >
-        {avatarFallback}
-      </span>
-    </div>
   );
 }
 
@@ -133,10 +86,16 @@ export default function Header() {
 
       const attributes = attributesResult.status === "fulfilled" ? attributesResult.value : null;
       const displayName = getDisplayName(userResult.value, attributes);
+      const profileUsername = attributes?.preferred_username ?? null;
+
+      const profile = await getProfileByUserId(userResult.value.userId).catch(() => null);
+
+      if (!isActive) return;
 
       setAuthState({
-        avatarUrl: getAvatarUrl(attributes),
+        avatarPath: profile?.avatarPath ?? null,
         displayName,
+        profileUsername,
         isAdmin,
         isAuthenticated: true,
       });
@@ -206,7 +165,13 @@ export default function Header() {
             </Link>
           ))}
           <div className="ml-3 flex items-center gap-3">
-            <Avatar avatarUrl={authState.avatarUrl} displayName={authState.displayName} />
+            {authState.isAuthenticated && authState.profileUsername ? (
+              <Link href={`/user/${authState.profileUsername}`} aria-label="View profile">
+                <ProfileAvatar avatarPath={authState.avatarPath} displayName={authState.displayName} />
+              </Link>
+            ) : (
+              <ProfileAvatar avatarPath={authState.avatarPath} displayName={authState.displayName} />
+            )}
             {authState.isAuthenticated ? (
               <button
                 type="button"
@@ -264,7 +229,13 @@ export default function Header() {
             </Link>
           ))}
           <div className="mt-2 flex items-center gap-3 border-t border-outline-variant/10 pt-4">
-            <Avatar avatarUrl={authState.avatarUrl} displayName={authState.displayName} />
+            {authState.isAuthenticated && authState.profileUsername ? (
+              <Link href={`/user/${authState.profileUsername}`} onClick={() => setIsMenuOpen(false)} aria-label="View profile">
+                <ProfileAvatar avatarPath={authState.avatarPath} displayName={authState.displayName} />
+              </Link>
+            ) : (
+              <ProfileAvatar avatarPath={authState.avatarPath} displayName={authState.displayName} />
+            )}
             {authState.isAuthenticated ? (
               <button
                 type="button"

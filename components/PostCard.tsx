@@ -17,7 +17,7 @@ export default function PostCard({ post }: { post: PostCardPost }) {
   const excerpt = post.excerpt || '';
   const authorName = post.authorName || 'Author';
   const tag = (post.tags && post.tags.length > 0) ? post.tags[0] : 'Blog';
-  const date = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : 'Draft';
+  const date = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-US") : 'Draft';
 
   return (
     <Link href={`/blog/${slug}`} className="group cursor-pointer block">

@@ -5,6 +5,7 @@ import type { BlogStatus } from "@/lib/blog-data";
 import { startTransition, useEffect, useState } from "react";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
 import { getCurrentUser } from "aws-amplify/auth";
+import { getProfileByUserId } from "@/lib/profile-data";
 import {
   listBlogImages,
   type BlogMediaItem,
@@ -213,7 +214,10 @@ export default function BlogEditorShell({
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean);
-      const authorName = user.signInDetails?.loginId ?? user.username;
+      const profile = await getProfileByUserId(user.userId).catch(() => null);
+      const authorName = profile
+        ? `${profile.displayName ?? profile.username} (${profile.username})`
+        : (user.signInDetails?.loginId ?? user.username);
       const nextPublishedAt =
         blogStatus === "PUBLISHED" ? publishedAt ?? new Date().toISOString() : null;
 
