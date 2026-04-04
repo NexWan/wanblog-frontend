@@ -66,6 +66,7 @@ export default async function Home() {
                   authorName: post.author.name,
                   tags: post.tags,
                   publishedAt: new Date().toISOString(),
+                  blogId: post.id,
                 }}
               />
             ))}
