@@ -14,7 +14,7 @@ type ProfileClient = {
       ) => Promise<{ data: UserProfile | null; errors?: { message: string }[] }>;
       get: (
         input: { userId: string },
-        options: { authMode: "userPool" }
+        options: { authMode: "userPool" | "apiKey" }
       ) => Promise<{ data: UserProfile | null; errors?: { message: string }[] }>;
       getUserProfileByUsername: (
         input: { username: string },
