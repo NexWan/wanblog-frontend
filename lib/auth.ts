@@ -33,3 +33,17 @@ export async function requireAdmin() {
 
   return groups;
 }
+
+export async function getCurrentUserSub(): Promise<string | null> {
+  try {
+    const session = await runWithAmplifyServerContext({
+      nextServerContext: { cookies },
+      operation: (contextSpec) => fetchAuthSession(contextSpec),
+    });
+
+    const sub = session.tokens?.accessToken.payload["sub"];
+    return typeof sub === "string" ? sub : null;
+  } catch {
+    return null;
+  }
+}
