@@ -1,9 +1,10 @@
-import PostCard from "@/components/PostCard";
 import { isCurrentUserAdmin } from "@/lib/auth";
 import { listBlogsForAdmin, listBlogsPublic } from "@/lib/blog-data.server";
 import { resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
 import { getLikeCountByBlogId } from "@/lib/like-data.server";
 import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
+import type { EnrichedBlog } from "@/lib/enriched-blog-types";
+import BlogFilter from "@/components/blog/BlogFilter";
 
 export default async function BlogIndexPage() {
   const isAdmin = await isCurrentUserAdmin();
@@ -29,6 +30,24 @@ export default async function BlogIndexPage() {
     return { ...blog, coverImageUrl: coverResults[i], authorName };
   });
 
+  // Batch-fetch like counts in parallel
+  const likeCounts = await Promise.all(
+    blogsWithCovers.map((blog) => getLikeCountByBlogId(blog.blogId))
+  );
+
+  const enrichedBlogs: EnrichedBlog[] = blogsWithCovers.map((blog, i) => ({
+    blogId: blog.blogId,
+    title: blog.title,
+    slug: blog.slug,
+    excerpt: blog.excerpt ?? null,
+    tags: (blog.tags ?? []).filter((t): t is string => t !== null),
+    authorName: blog.authorName,
+    publishedAt: blog.publishedAt ?? null,
+    coverImageUrl: blog.coverImageUrl ?? null,
+    likeCount: likeCounts[i],
+    status: blog.status,
+  }));
+
   return (
     <main className="px-6 max-w-7xl mx-auto mb-20">
       <div className="flex items-center justify-between mb-12 mt-12">
@@ -40,24 +59,7 @@ export default async function BlogIndexPage() {
         This route is intentionally a shell for future published posts. Readers will click on a post to read its full long-form editorial content.
       </p>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-        {blogsWithCovers.map(async (blog) => (
-          <PostCard
-            key={blog.blogId}
-            post={{
-              title: blog.title,
-              slug: blog.slug,
-              excerpt: blog.excerpt ?? "",
-              authorName: blog.authorName,
-              tags: blog.tags,
-              publishedAt: blog.publishedAt,
-              coverImageUrl: blog.coverImageUrl,
-              likeCount: await getLikeCountByBlogId(blog.blogId),
-              blogId: blog.blogId, // Pass blogId for LikeButton
-            }}
-          />
-        ))}
-      </section>
+      <BlogFilter blogs={enrichedBlogs} />
     </main>
   );
 }

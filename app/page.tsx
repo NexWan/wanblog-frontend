@@ -30,6 +30,14 @@ export default async function Home() {
     return { ...blog, coverImageUrl: coverResults[i], authorName };
   });
 
+  const exploreTags = [
+    ...new Set(
+      recentPosts.flatMap((post) =>
+        (post.tags ?? []).filter((t): t is string => t !== null)
+      )
+    ),
+  ];
+
   return (
     <main className="px-6 max-w-7xl mx-auto">
       {/* Hero Section */}
@@ -107,11 +115,15 @@ export default async function Home() {
               <span className="ml-4 h-px flex-grow bg-outline-variant/20"></span>
             </h3>
             <div className="flex flex-wrap gap-2">
-              {["AWS AMPLIFY", "NEXTJS", "TYPESCRIPT", "TAILWINDCSS", "DARK MODE", "UI DESIGN"].map((tag) => (
-                <span key={tag} className="bg-surface-container-high hover:bg-primary hover:text-on-primary transition-colors px-4 py-2 rounded-full text-xs font-bold font-label cursor-pointer">
-                  {tag}
-                </span>
-              ))}
+              {exploreTags.length > 0 ? (
+                exploreTags.map((tag) => (
+                  <span key={tag} className="bg-surface-container-high hover:bg-primary hover:text-on-primary transition-colors px-4 py-2 rounded-full text-xs font-bold font-label cursor-pointer">
+                    {tag}
+                  </span>
+                ))
+              ) : (
+                <p className="text-on-surface-variant text-xs font-label">No topics yet.</p>
+              )}
             </div>
           </section>
         </aside>
