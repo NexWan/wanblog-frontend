@@ -1,0 +1,137 @@
+name: PR Commit Summary
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  update-pr-body:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build commit summary and update PR body
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const base = context.payload.pull_request.base.sha;
+            const head = context.payload.pull_request.head.sha;
+
+            // Get all commits in this PR
+            const { execSync } = require('child_process');
+            const log = execSync(
+              `git log ${base}..${head} --pretty=format:"%s"`,
+              { encoding: 'utf8' }
+            ).trim();
+
+            if (!log) {
+              console.log('No commits found, skipping.');
+              return;
+            }
+
+            const lines = log.split('\n').filter(Boolean);
+
+            // Conventional commit types to track
+            const types = {
+              feat:     { label: '`feat`',     description: 'New features',            commits: [] },
+              fix:      { label: '`fix`',      description: 'Bug fixes',               commits: [] },
+              docs:     { label: '`docs`',     description: 'Documentation',           commits: [] },
+              refactor: { label: '`refactor`', description: 'Refactors',               commits: [] },
+              perf:     { label: '`perf`',     description: 'Performance improvements',commits: [] },
+              test:     { label: '`test`',     description: 'Tests',                   commits: [] },
+              build:    { label: '`build`',    description: 'Build / dependencies',    commits: [] },
+              chore:    { label: '`chore`',    description: 'Chores / CI',             commits: [] },
+            };
+
+            const other = [];
+
+            // conventional commit regex: type(scope)!: description
+            const CC_RE = /^(\w+)(\([^)]*\))?(!)?\s*:\s*(.+)/;
+
+            for (const msg of lines) {
+              const m = msg.match(CC_RE);
+              if (m) {
+                const type  = m[1].toLowerCase();
+                const scope = m[2] ? m[2] : '';          // "(scope)" or ""
+                const bang  = m[3] ? ' ⚠️'  : '';        // "!" → breaking
+                const desc  = m[4];
+                const entry = `${scope}${bang} ${desc}`.trim();
+
+                if (types[type]) {
+                  types[type].commits.push(entry);
+                } else {
+                  other.push(`\`${type}\` ${entry}`);
+                }
+              } else {
+                other.push(msg);
+              }
+            }
+
+            // Build the replacement block
+            const lines_out = [];
+
+            for (const [, info] of Object.entries(types)) {
+              if (info.commits.length === 0) continue;
+              lines_out.push(`### ${info.label} — ${info.description}`);
+              for (const c of info.commits) {
+                lines_out.push(`- ${c}`);
+              }
+              lines_out.push('');
+            }
+
+            if (other.length > 0) {
+              lines_out.push('### Other commits');
+              for (const c of other) {
+                lines_out.push(`- ${c}`);
+              }
+              lines_out.push('');
+            }
+
+            if (lines_out.length === 0) {
+              console.log('No categorisable commits, skipping.');
+              return;
+            }
+
+            const summary = lines_out.join('\n').trimEnd();
+
+            // Fetch current PR body
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const body = pr.body || '';
+
+            const START = '<!-- COMMIT_SUMMARY_START -->';
+            const END   = '<!-- COMMIT_SUMMARY_END -->';
+
+            if (!body.includes(START) || !body.includes(END)) {
+              console.log('Markers not found in PR body, skipping update.');
+              return;
+            }
+
+            const newBody = body.replace(
+              new RegExp(`${START}[\\s\\S]*?${END}`),
+              `${START}\n${summary}\n${END}`
+            );
+
+            if (newBody === body) {
+              console.log('No changes to PR body.');
+              return;
+            }
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              body: newBody,
+            });
+
+            console.log('PR body updated successfully.');
