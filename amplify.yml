@@ -1,0 +1,22 @@
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - npm install -g bun
+        - bun install
+        - npm_config_user_agent=npm bunx ampx generate outputs --branch ${BACKEND_BRANCH} --app-id d2x2q216xa9tje --out-dir .
+frontend:
+  phases:
+    build:
+      commands:
+        - bun run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - .next/cache/**/*
+      - ~/.bun/install/cache/**/*
+      - node_modules/**/*
