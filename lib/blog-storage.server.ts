@@ -66,3 +66,33 @@ export async function getMarkdownContentServer(path: string) {
 
   return response.text();
 }
+
+const amplifyImagePattern = /!\[([^\]]*)\]\(amplify:\/\/([^)]+)\)/g;
+
+/**
+ * Replaces all amplify:// image references in markdown with pre-signed HTTPS URLs
+ * using guest credentials so authenticated non-admin users can view inline images.
+ */
+export async function resolveMarkdownImagesServer(markdown: string): Promise<string> {
+  const imagePaths = [...new Set(
+    Array.from(markdown.matchAll(amplifyImagePattern), (m) => m[2])
+  )];
+
+  if (imagePaths.length === 0) return markdown;
+
+  const resolvedEntries = await Promise.all(
+    imagePaths.map(async (path) => {
+      const result = await resolveAmplifyImageUrlServer(path).catch(() => null);
+      return [path, result?.url ?? null] as const;
+    })
+  );
+
+  let resolved = markdown;
+  for (const [path, url] of resolvedEntries) {
+    if (url) {
+      resolved = resolved.replaceAll(`amplify://${path}`, url);
+    }
+  }
+
+  return resolved;
+}

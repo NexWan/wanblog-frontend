@@ -6,7 +6,7 @@ import LikeButton from "@/components/blog/LikeButton";
 import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import { getBlogBySlugForAdmin, getBlogBySlugPublic } from "@/lib/blog-data.server";
 import { isCurrentUserAdmin } from "@/lib/auth";
-import { getMarkdownContentServer, resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
+import { getMarkdownContentServer, resolveMarkdownImagesServer, resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
 import { listCommentsByBlogId } from "@/lib/comment-data.server";
 import { getLikeCountByBlogId } from "@/lib/like-data.server";
 import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
@@ -43,14 +43,17 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     );
   }
 
-  const [markdownContent, coverImageUrl, comments, likeCount, authorProfile] = await Promise.all([
+  const [rawMarkdown, coverImageUrl, comments, likeCount, authorProfile] = await Promise.all([
     getMarkdownContentServer(blog.contentPath),
     resolveCoverImageUrlServer(blog.coverImagePath ?? null),
     listCommentsByBlogId(blog.blogId),
     getLikeCountByBlogId(blog.blogId),
     getProfileByUserIdPublic(blog.authorUserId),
   ]);
-  const authorAvatarUrl = await resolveAvatarUrlServer(authorProfile?.avatarPath);
+  const [markdownContent, authorAvatarUrl] = await Promise.all([
+    resolveMarkdownImagesServer(rawMarkdown),
+    resolveAvatarUrlServer(authorProfile?.avatarPath),
+  ]);
 
   const uniqueCommentAuthorIds = [...new Set(comments.map((c) => c.authorUserId))];
   const commentAuthorProfiles = await Promise.all(
