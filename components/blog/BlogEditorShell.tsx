@@ -52,6 +52,8 @@ export default function BlogEditorShell({
   const [tags, setTags] = useState(initialTags.join(", "));
   const [markdown, setMarkdown] = useState(initialMarkdown);
   const [imageAltText, setImageAltText] = useState("Blog image");
+  const [imageSize, setImageSize] = useState("full");
+  const [imageFit, setImageFit] = useState("cover");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [statusMessage, setStatusMessage] = useState(
     "Draft assets will be written to S3 under the drafts prefix."
@@ -176,8 +178,12 @@ export default function BlogEditorShell({
     setStatusMessage(`Cover set to ${image.path}.`);
   }
 
+  function buildEncodedAltText(base: string) {
+    return `${base.trim() || "Blog image"}|${imageSize}|${imageFit}`;
+  }
+
   function handleExistingImageInsert(image: BlogMediaItem) {
-    const altText = imageAltText.trim() || image.altText;
+    const altText = buildEncodedAltText(imageAltText.trim() || image.altText);
 
     setMarkdown((currentMarkdown) => {
       const needsSpacing = currentMarkdown.length > 0 && !currentMarkdown.endsWith("\n");
@@ -279,7 +285,7 @@ export default function BlogEditorShell({
       const result = await uploadBlogImage({
         blogId,
         file: selectedImage,
-        altText: imageAltText,
+        altText: buildEncodedAltText(imageAltText),
       });
 
       startTransition(() => {
@@ -502,6 +508,31 @@ export default function BlogEditorShell({
                     className="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-xs outline-none focus:border-primary"
                     placeholder="Describe the image"
                   />
+                </label>
+                <label className="grid gap-2 text-sm text-on-surface-variant">
+                  <span className="font-label text-[10px] uppercase tracking-widest">Size</span>
+                  <select
+                    value={imageSize}
+                    onChange={(e) => setImageSize(e.target.value)}
+                    className="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-xs outline-none focus:border-primary appearance-none"
+                  >
+                    <option value="full">Full width</option>
+                    <option value="half">Half width</option>
+                    <option value="quarter">Quarter width</option>
+                    <option value="square">Square</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm text-on-surface-variant">
+                  <span className="font-label text-[10px] uppercase tracking-widest">Fit</span>
+                  <select
+                    value={imageFit}
+                    onChange={(e) => setImageFit(e.target.value)}
+                    className="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-xs outline-none focus:border-primary appearance-none"
+                  >
+                    <option value="cover">Cover (crop to fill)</option>
+                    <option value="contain">Contain (letterbox)</option>
+                    <option value="none">Natural (no crop)</option>
+                  </select>
                 </label>
              </div>
              <button

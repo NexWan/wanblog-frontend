@@ -67,16 +67,32 @@ export default function MarkdownPreview({ source }: MarkdownPreviewProps) {
             );
           },
           img: ({ src, alt, ...props }) => {
-            if (!src) {
-              return null;
-            }
+            if (!src) return null;
+
+            // Parse optional |size|fit suffix from alt text: "My caption|half|contain"
+            const parts = (alt ?? "").split("|");
+            const displayAlt = parts[0];
+            const size = parts[1] ?? "full";
+            const fit = parts[2] ?? "cover";
+
+            const sizeClass: Record<string, string> = {
+              full: "w-full",
+              half: "w-1/2 mx-auto",
+              quarter: "w-1/4 mx-auto",
+              square: "w-full aspect-square",
+            };
+            const fitClass: Record<string, string> = {
+              cover: "object-cover aspect-video",
+              contain: "object-contain aspect-video bg-surface-container",
+              none: "object-none h-auto",
+            };
 
             return (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={src}
-                alt={alt ?? ""}
-                className="my-12 rounded-2xl border border-outline-variant/10 shadow-2xl editorial-shadow w-full object-cover aspect-video"
+                alt={displayAlt}
+                className={`block my-12 rounded-2xl border border-outline-variant/10 shadow-2xl editorial-shadow ${sizeClass[size] ?? sizeClass.full} ${fitClass[fit] ?? fitClass.cover}`}
                 {...props}
               />
             );
