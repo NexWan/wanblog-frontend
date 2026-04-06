@@ -360,7 +360,7 @@ export default function BlogEditorShell({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[800px] border border-outline-variant/15 rounded-2xl overflow-hidden shadow-2xl editorial-shadow bg-surface-dim mt-8">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-10rem)] border border-outline-variant/15 rounded-2xl overflow-hidden shadow-2xl editorial-shadow bg-surface-dim mt-8">
       {/* Left Side: Form & Editor */}
       <div className="w-full lg:w-1/2 overflow-y-auto border-r border-outline-variant/15 p-8 space-y-10 custom-scrollbar">
         {/* Metadata Section */}
