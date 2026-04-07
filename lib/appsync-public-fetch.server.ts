@@ -112,15 +112,17 @@ export async function fetchPublishedBlogsByAuthorPublic(authorUserId: string): P
     listBlogsByAuthorUserId: { items: Blog[] };
   }>(
     `query ListBlogsByAuthorUserId($authorUserId: String!) {
-      listBlogsByAuthorUserId(authorUserId: $authorUserId, sortDirection: DESC) {
+      listBlogsByAuthorUserId(
+        authorUserId: $authorUserId
+        sortDirection: DESC
+        filter: { status: { eq: PUBLISHED } }
+      ) {
         items { ${BLOG_FIELDS} }
       }
     }`,
     { authorUserId },
   );
-  return data.listBlogsByAuthorUserId.items
-    .filter((b) => b.status === "PUBLISHED")
-    .map(normalizeBlogPublishedAt);
+  return data.listBlogsByAuthorUserId.items.map(normalizeBlogPublishedAt);
 }
 
 export async function fetchProfileByUserIdPublic(userId: string): Promise<UserProfile | null> {
