@@ -203,13 +203,6 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
             <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
             <div>
               <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">
-                Status
-              </p>
-              <p className="font-body font-bold text-on-surface">{blog.status}</p>
-            </div>
-            <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
-            <div>
-              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">
                 Tags
               </p>
               <TagList tags={safeTags} />
