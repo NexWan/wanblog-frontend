@@ -97,7 +97,7 @@ export async function fetchBlogBySlugPublic(slug: string): Promise<Blog | null> 
     listBlogsBySlug: { items: Blog[] };
   }>(
     `query ListBlogsBySlug($slug: String!) {
-      listBlogsBySlug(slug: $slug) {
+      listBlogsBySlug(slug: $slug, filter: { status: { eq: PUBLISHED } }) {
         items { ${BLOG_FIELDS} }
       }
     }`,
