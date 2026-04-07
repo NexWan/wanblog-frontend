@@ -6,7 +6,6 @@ import { fetchAuthSession } from "aws-amplify/auth";
 
 export default function AdminSidebarBlock() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [groups, setGroups] = useState<string[]>([]);
 
   useEffect(() => {
     fetchAuthSession()
@@ -15,7 +14,6 @@ export default function AdminSidebarBlock() {
         const adminGroups = Array.isArray(cognitoGroups)
           ? (cognitoGroups as string[])
           : [];
-        setGroups(adminGroups);
         setIsAdmin(adminGroups.includes("admin"));
       })
       .catch(() => {});
@@ -28,7 +26,6 @@ export default function AdminSidebarBlock() {
       <h3 className="text-2xl font-bold mb-4 font-headline">Administration</h3>
       <p className="text-on-surface-variant mb-6 text-sm font-body leading-relaxed">
         If you have access, you can manage the content listed on the platform here.
-        Groups: {groups.join(", ") || "none"}
       </p>
       <Link
         href="/admin/blogs"
