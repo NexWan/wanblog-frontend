@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,7 +14,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Revalidation secret not configured" }, { status: 500 });
   }
 
-  if (secret !== expectedSecret) {
+  const secretBuf = Buffer.from(secret ?? "");
+  const expectedBuf = Buffer.from(expectedSecret);
+  const isValid =
+    secretBuf.length === expectedBuf.length && timingSafeEqual(secretBuf, expectedBuf);
+  if (!isValid) {
     return NextResponse.json({ error: "Invalid secret" }, { status: 401 });
   }
 
