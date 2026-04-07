@@ -2,6 +2,7 @@
 
 import { createBlog, updateBlog } from "@/lib/blog-data";
 import type { BlogStatus } from "@/lib/blog-data";
+import { revalidateBlogCache } from "@/app/actions/revalidate";
 import { startTransition, useEffect, useState } from "react";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
 import { getCurrentUser } from "aws-amplify/auth";
@@ -250,6 +251,12 @@ export default function BlogEditorShell({
           blogId,
           ...blogPayload,
         });
+      }
+
+      if (blogStatus === "PUBLISHED") {
+        await revalidateBlogCache(slug).catch((err) =>
+          console.warn("Cache revalidation failed (non-critical):", err),
+        );
       }
 
       startTransition(() => {
