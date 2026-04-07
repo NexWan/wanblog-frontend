@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import TagList from "@/components/blog/TagList";
 import MarkdownPreview from "@/components/blog/MarkdownPreview";
@@ -30,6 +31,42 @@ type BlogDetailPageProps = {
 export async function generateStaticParams() {
   const blogs = await fetchAllPublishedBlogsPublic();
   return blogs.map((blog) => ({ slug: blog.slug }));
+}
+
+export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const blog = await cachedGetBlogBySlug(slug);
+
+  if (!blog || blog.status !== "PUBLISHED") {
+    return { title: "WanBlog" };
+  }
+
+  const safeTags = (blog.tags ?? []).filter((t): t is string => Boolean(t));
+  const description = blog.excerpt ?? undefined;
+  const coverImageUrl = blog.coverImagePath
+    ? await cachedResolveCoverImageUrl(blog.coverImagePath).catch(() => null)
+    : null;
+
+  return {
+    title: `${blog.title} | WanBlog`,
+    description,
+    keywords: safeTags,
+    openGraph: {
+      title: blog.title,
+      description,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/blog/${slug}`,
+      type: "article",
+      publishedTime: blog.publishedAt ?? undefined,
+      tags: safeTags,
+      ...(coverImageUrl ? { images: [{ url: coverImageUrl }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: blog.title,
+      description,
+      ...(coverImageUrl ? { images: [coverImageUrl] } : {}),
+    },
+  };
 }
 
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {

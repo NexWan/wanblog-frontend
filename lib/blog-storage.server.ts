@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { getUrl } from "aws-amplify/storage/server";
 import { runWithAmplifyServerContext } from "@/lib/amplifyServerUtils";
 import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
@@ -45,7 +46,7 @@ export async function resolveAmplifyImageUrlServer(path: string) {
   });
 }
 
-export async function resolveCoverImageUrlServer(
+export const resolveCoverImageUrlServer = cache(async function resolveCoverImageUrlServer(
   coverImagePath: string | null | undefined,
 ): Promise<string | null> {
   if (!coverImagePath) return null;
@@ -55,7 +56,7 @@ export async function resolveCoverImageUrlServer(
   } catch {
     return null;
   }
-}
+});
 
 export async function getMarkdownContentServer(path: string) {
   const { url } = await resolveAmplifyImageUrlServer(path);

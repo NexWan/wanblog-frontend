@@ -21,7 +21,10 @@ const themeScript = `
 
 export const metadata: Metadata = {
   title: "WanBlog",
-  description: "WanBlog frontend",
+  description: "Systems, data, and how things really work. A blog by Wan on software engineering, cloud infrastructure, and the ideas behind the tech.",
+  icons: {
+    icon: "/tsuchinoko.svg",
+  },
 };
 
 export default function RootLayout({

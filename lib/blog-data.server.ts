@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { generateServerClientUsingCookies } from "@aws-amplify/adapter-nextjs/api";
 import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
@@ -78,7 +79,7 @@ export async function listBlogsForAdmin() {
   return (data as Blog[]).map((blog) => normalizeBlogPublishedAt(blog));
 }
 
-export async function getBlogBySlugPublic(slug: string) {
+export const getBlogBySlugPublic = cache(async function getBlogBySlugPublic(slug: string) {
   const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
     { slug },
     { authMode: "apiKey" },
@@ -87,7 +88,7 @@ export async function getBlogBySlugPublic(slug: string) {
   await assertNoErrors(errors);
 
   return data[0] ? normalizeBlogPublishedAt(data[0] as Blog) : null;
-}
+});
 
 export async function getBlogBySlugForAdmin(slug: string) {
   const { data, errors } = await serverClient.models.Blog.listBlogsBySlug(
