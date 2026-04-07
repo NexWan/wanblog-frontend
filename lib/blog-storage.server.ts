@@ -33,6 +33,7 @@ export async function resolveAmplifyImageUrlServer(path: string) {
         options: {
           bucket: BLOG_STORAGE_BUCKET,
           validateObjectExistence: true,
+          expiresIn: 43200, // 12 hours — keeps URLs valid well beyond ISR cache TTLs
         },
       });
 
