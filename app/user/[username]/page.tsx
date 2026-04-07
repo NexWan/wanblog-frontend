@@ -1,15 +1,12 @@
-import Link from "next/link";
 import ProfileAvatar from "@/components/profile/ProfileAvatar";
-import ProfileBootstrapper from "@/components/profile/ProfileBootstrapper";
+import OwnProfileActions from "@/components/profile/OwnProfileActions";
 import PostCard from "@/components/PostCard";
-import { getProfileByUsername } from "@/lib/profile-data.server";
-import { listPublishedBlogsByAuthor } from "@/lib/blog-data.server";
-import { resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
-import { resolveAvatarUrlServer } from "@/lib/profile-storage.server";
-import { getCurrentUserSub } from "@/lib/auth";
-import { runWithAmplifyServerContext } from "@/lib/amplifyServerUtils";
-import { fetchUserAttributes } from "aws-amplify/auth/server";
-import { cookies } from "next/headers";
+import {
+  cachedGetProfileByUsername,
+  cachedListPublishedBlogsByAuthor,
+  cachedResolveCoverImageUrl,
+  cachedResolveAvatarUrl,
+} from "@/lib/cached-queries.server";
 import {
   XOutlined,
   InstagramOutlined,
@@ -17,62 +14,37 @@ import {
   LinkOutlined,
 } from "@ant-design/icons";
 
+export const revalidate = 600;
+
 type UserProfilePageProps = {
   params: Promise<{ username: string }>;
 };
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
   const { username } = await params;
-  const [profile, currentSub] = await Promise.all([
-    getProfileByUsername(username),
-    getCurrentUserSub(),
-  ]);
-
-  const isOwn = Boolean(currentSub && profile && currentSub === profile.userId);
+  const profile = await cachedGetProfileByUsername(username);
 
   if (!profile) {
-    if (currentSub) {
-      let preferredUsername: string | null = null;
-      let displayName: string | null = null;
-
-      try {
-        const attributes = await runWithAmplifyServerContext({
-          nextServerContext: { cookies },
-          operation: (ctx) => fetchUserAttributes(ctx),
-        });
-        preferredUsername = attributes.preferred_username ?? null;
-        displayName = attributes.given_name ?? attributes.preferred_username ?? null;
-      } catch {
-        // not authenticated or attributes unavailable
-      }
-
-      if (preferredUsername === username) {
-        return (
-          <ProfileBootstrapper
-            userId={currentSub}
-            username={username}
-            displayName={displayName}
-          />
-        );
-      }
-    }
-
     return (
       <main className="pt-32 pb-20 text-center text-on-surface">
         <h1 className="text-4xl font-headline font-bold mb-4">Profile not found</h1>
         <p className="text-on-surface-variant font-body">
           No profile exists for <span className="text-primary">@{username}</span>.
         </p>
+        {/* Client component handles bootstrapping if this is the user's own username */}
+        <OwnProfileActions username={username} profileUserId={null} />
       </main>
     );
   }
 
   const [blogs, profileAvatarUrl] = await Promise.all([
-    listPublishedBlogsByAuthor(profile.userId),
-    resolveAvatarUrlServer(profile.avatarPath),
+    cachedListPublishedBlogsByAuthor(profile.userId),
+    cachedResolveAvatarUrl(profile.avatarPath ?? "").catch(() => null),
   ]);
   const coverResults = await Promise.all(
-    blogs.map((blog) => resolveCoverImageUrlServer(blog.coverImagePath ?? null))
+    blogs.map((blog) =>
+      cachedResolveCoverImageUrl(blog.coverImagePath ?? "").catch(() => null),
+    ),
   );
   const blogsWithCovers = blogs.map((blog, i) => ({ ...blog, coverImageUrl: coverResults[i] }));
 
@@ -127,14 +99,8 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
           </div>
         )}
 
-        {isOwn && (
-          <Link
-            href={`/user/${username}/edit`}
-            className="inline-flex min-h-9 items-center justify-center rounded-full border border-outline-variant/40 px-5 py-2 font-label text-[11px] uppercase tracking-[0.24em] text-on-surface-variant hover:text-on-surface transition-colors"
-          >
-            Edit profile
-          </Link>
-        )}
+        {/* Edit button — client component checks ownership */}
+        <OwnProfileActions username={username} profileUserId={profile.userId} />
       </div>
 
       {/* Published blogs */}
@@ -165,9 +131,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
             ))}
           </div>
         ) : (
-          <p className="text-on-surface-variant font-body text-sm">
-            No published posts yet.
-          </p>
+          <p className="text-on-surface-variant font-body text-sm">No published posts yet.</p>
         )}
       </section>
     </main>
