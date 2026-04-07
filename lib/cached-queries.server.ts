@@ -91,7 +91,7 @@ export const cachedGetResolvedMarkdown = unstable_cache(
     return resolveMarkdownImagesServer(rawMarkdown);
   },
   ["get-resolved-markdown"],
-  { revalidate: 10800 }, // 3 hours
+  { revalidate: 10800, tags: ["published-blogs"] }, // 3 hours
 );
 
 export const cachedGetLikeCountByBlogId = unstable_cache(
