@@ -4,13 +4,22 @@ import MarkdownPreview from "@/components/blog/MarkdownPreview";
 import CommentSection from "@/components/blog/CommentSection";
 import LikeButton from "@/components/blog/LikeButton";
 import ProfileAvatar from "@/components/profile/ProfileAvatar";
-import { getBlogBySlugForAdmin, getBlogBySlugPublic } from "@/lib/blog-data.server";
-import { isCurrentUserAdmin } from "@/lib/auth";
-import { getMarkdownContentServer, resolveMarkdownImagesServer, resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
-import { listCommentsByBlogId } from "@/lib/comment-data.server";
-import { getLikeCountByBlogId } from "@/lib/like-data.server";
-import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
-import { resolveAvatarUrlServer } from "@/lib/profile-storage.server";
+import {
+  cachedGetBlogBySlug,
+  cachedGetProfileByUserId,
+  cachedResolveCoverImageUrl,
+  cachedResolveAvatarUrl,
+  cachedGetMarkdownContent,
+  cachedResolveMarkdownImages,
+} from "@/lib/cached-queries.server";
+import {
+  fetchAllPublishedBlogsPublic,
+  fetchCommentsByBlogIdPublic,
+  fetchLikeCountByBlogIdPublic,
+} from "@/lib/appsync-public-fetch.server";
+
+export const revalidate = 300;
+export const dynamicParams = true;
 
 type BlogDetailPageProps = {
   params: Promise<{
@@ -18,12 +27,14 @@ type BlogDetailPageProps = {
   }>;
 };
 
+export async function generateStaticParams() {
+  const blogs = await fetchAllPublishedBlogsPublic();
+  return blogs.map((blog) => ({ slug: blog.slug }));
+}
+
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   const { slug } = await params;
-  const isAdmin = await isCurrentUserAdmin();
-  const blog = isAdmin
-    ? await getBlogBySlugForAdmin(slug)
-    : await getBlogBySlugPublic(slug);
+  const blog = await cachedGetBlogBySlug(slug);
 
   if (!blog) {
     return (
@@ -34,44 +45,54 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     );
   }
 
-  if (blog.status !== "PUBLISHED" && !isAdmin) {
+  if (blog.status !== "PUBLISHED") {
     return (
       <main className="pt-32 pb-20 text-center text-on-surface">
         <h1 className="text-4xl font-headline font-bold mb-4">Post unavailable</h1>
-        <p className="text-on-surface-variant font-body mb-8">This blog post is unpublished or does not exist.</p>
+        <p className="text-on-surface-variant font-body mb-8">
+          This blog post is unpublished or does not exist.
+        </p>
       </main>
     );
   }
 
   const [rawMarkdown, coverImageUrl, comments, likeCount, authorProfile] = await Promise.all([
-    getMarkdownContentServer(blog.contentPath),
-    resolveCoverImageUrlServer(blog.coverImagePath ?? null),
-    listCommentsByBlogId(blog.blogId),
-    getLikeCountByBlogId(blog.blogId),
-    getProfileByUserIdPublic(blog.authorUserId),
+    cachedGetMarkdownContent(blog.contentPath),
+    cachedResolveCoverImageUrl(blog.coverImagePath ?? "").catch(() => null),
+    fetchCommentsByBlogIdPublic(blog.blogId),
+    fetchLikeCountByBlogIdPublic(blog.blogId),
+    cachedGetProfileByUserId(blog.authorUserId),
   ]);
+
   const [markdownContent, authorAvatarUrl] = await Promise.all([
-    resolveMarkdownImagesServer(rawMarkdown),
-    resolveAvatarUrlServer(authorProfile?.avatarPath),
+    cachedResolveMarkdownImages(rawMarkdown, slug),
+    cachedResolveAvatarUrl(authorProfile?.avatarPath ?? "").catch(() => null),
   ]);
 
   const uniqueCommentAuthorIds = [...new Set(comments.map((c) => c.authorUserId))];
   const commentAuthorProfiles = await Promise.all(
-    uniqueCommentAuthorIds.map((id) => getProfileByUserIdPublic(id).catch(() => null))
+    uniqueCommentAuthorIds.map((id) => cachedGetProfileByUserId(id).catch(() => null)),
   );
   const commentAvatarUrls: Record<string, string | null> = {};
   await Promise.all(
     uniqueCommentAuthorIds.map(async (userId, i) => {
       const profile = commentAuthorProfiles[i];
-      commentAvatarUrls[userId] = await resolveAvatarUrlServer(profile?.avatarPath);
-    })
+      commentAvatarUrls[userId] = await cachedResolveAvatarUrl(
+        profile?.avatarPath ?? "",
+      ).catch(() => null);
+    }),
   );
+
   const titleWords: string[] = blog.title.split(" ");
   const safeTags: string[] = (blog.tags ?? []).filter(
-    (tag: string | null | undefined): tag is string => Boolean(tag)
+    (tag: string | null | undefined): tag is string => Boolean(tag),
   );
   const date = blog.publishedAt
-    ? new Date(blog.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    ? new Date(blog.publishedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
     : "Draft";
   const tag = safeTags.length > 0 ? safeTags[0] : "Blog";
   const authorDisplayName = authorProfile?.displayName ?? blog.authorName;
@@ -102,10 +123,14 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
             {tag}
           </div>
           <h1 className="font-headline text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] mb-8 text-on-surface">
-            {titleWords.map((word: string, i: number) => 
-               i % 3 === 0 && i !== 0
-                ? <span key={i} className="text-primary italic">{word} </span>
-                : `${word} `
+            {titleWords.map((word: string, i: number) =>
+              i % 3 === 0 && i !== 0 ? (
+                <span key={i} className="text-primary italic">
+                  {word}{" "}
+                </span>
+              ) : (
+                `${word} `
+              ),
             )}
           </h1>
 
@@ -118,9 +143,14 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
                 size="md"
               />
               <div>
-                <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Written by</p>
+                <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">
+                  Written by
+                </p>
                 {authorProfile ? (
-                  <Link href={`/user/${authorProfile.username}`} className="font-body font-bold text-primary hover:underline">
+                  <Link
+                    href={`/user/${authorProfile.username}`}
+                    className="font-body font-bold text-primary hover:underline"
+                  >
                     {authorLabel}
                   </Link>
                 ) : (
@@ -130,22 +160,30 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
             </div>
             <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
             <div>
-              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Published</p>
+              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">
+                Published
+              </p>
               <p className="font-body font-bold text-on-surface">{date}</p>
             </div>
-             <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
+            <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
             <div>
-              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Status</p>
+              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">
+                Status
+              </p>
               <p className="font-body font-bold text-on-surface">{blog.status}</p>
             </div>
             <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
             <div>
-              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Tags</p>
+              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">
+                Tags
+              </p>
               <TagList tags={safeTags} />
             </div>
             <div className="hidden md:block w-px h-10 bg-outline-variant/30"></div>
             <div className="flex flex-col items-center gap-1">
-              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">Likes</p>
+              <p className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-1">
+                Likes
+              </p>
               <LikeButton blogId={blog.blogId} initialLikeCount={likeCount} />
             </div>
           </div>
@@ -157,7 +195,11 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       </article>
 
       <section className="max-w-3xl mx-auto px-6 mt-16 pb-8">
-        <CommentSection blogId={blog.blogId} initialComments={comments} initialAvatarUrls={commentAvatarUrls} />
+        <CommentSection
+          blogId={blog.blogId}
+          initialComments={comments}
+          initialAvatarUrls={commentAvatarUrls}
+        />
       </section>
     </main>
   );

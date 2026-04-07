@@ -3,6 +3,7 @@ import "server-only";
 import { getServerAmplifyOutputs } from "@/lib/amplify-outputs.server";
 import { normalizeBlogPublishedAt, type Blog } from "@/lib/blog-types";
 import type { UserProfile } from "@/lib/profile-types";
+import type { Comment } from "@/lib/comment-types";
 
 const outputs = getServerAmplifyOutputs();
 const dataConfig = (outputs as unknown as { data: { url: string; api_key: string } }).data;
@@ -146,4 +147,40 @@ export async function fetchProfileByUsernamePublic(username: string): Promise<Us
     { username },
   );
   return data.getUserProfileByUsername.items[0] ?? null;
+}
+
+export async function fetchCommentsByBlogIdPublic(blogId: string): Promise<Comment[]> {
+  const data = await appsyncFetch<{
+    listCommentsByBlogId: { items: Comment[] };
+  }>(
+    `query ListCommentsByBlogId($blogId: ID!) {
+      listCommentsByBlogId(blogId: $blogId) {
+        items {
+          id
+          blogId
+          authorName
+          authorUserId
+          content
+          createdAt
+          updatedAt
+        }
+      }
+    }`,
+    { blogId },
+  );
+  return data.listCommentsByBlogId.items;
+}
+
+export async function fetchLikeCountByBlogIdPublic(blogId: string): Promise<number> {
+  const data = await appsyncFetch<{
+    listLikesByBlogId: { items: { blogId: string }[] };
+  }>(
+    `query ListLikesByBlogId($blogId: ID!) {
+      listLikesByBlogId(blogId: $blogId) {
+        items { blogId }
+      }
+    }`,
+    { blogId },
+  );
+  return data.listLikesByBlogId.items.length;
 }
