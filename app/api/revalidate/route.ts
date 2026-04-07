@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   if (payload.type === "blog") {
     const { slug } = payload;
-    revalidateTag("published-blogs");
+    revalidateTag("published-blogs", {});
     revalidatePath("/");
     revalidatePath("/blog");
     revalidatePath(`/blog/${slug}`);
@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
 
   if (payload.type === "profile") {
     const { userId, username } = payload;
-    revalidateTag(`profile-${userId}`);
+    revalidateTag(`profile-${userId}`, {});
+    revalidateTag(`profile-username-${username}`, {});
     revalidatePath(`/user/${username}`);
     return NextResponse.json({ revalidated: true, type: "profile", userId, username });
   }

@@ -45,20 +45,25 @@ export const cachedListPublishedBlogsByAuthor = unstable_cache(
 );
 
 // ---------------------------------------------------------------------------
-// Profile data
+// Profile data — factory pattern so each entity gets its own cache tag,
+// enabling targeted per-user invalidation via revalidateTag(`profile-${userId}`)
 // ---------------------------------------------------------------------------
 
-export const cachedGetProfileByUserId = unstable_cache(
-  (userId: string) => fetchProfileByUserIdPublic(userId),
-  ["get-profile-by-user-id"],
-  { revalidate: 600 },
-);
+export function cachedGetProfileByUserId(userId: string) {
+  return unstable_cache(
+    () => fetchProfileByUserIdPublic(userId),
+    [`profile-user-${userId}`],
+    { revalidate: 600, tags: [`profile-${userId}`] },
+  )();
+}
 
-export const cachedGetProfileByUsername = unstable_cache(
-  (username: string) => fetchProfileByUsernamePublic(username),
-  ["get-profile-by-username"],
-  { revalidate: 600 },
-);
+export function cachedGetProfileByUsername(username: string) {
+  return unstable_cache(
+    () => fetchProfileByUsernamePublic(username),
+    [`profile-username-${username}`],
+    { revalidate: 600, tags: [`profile-username-${username}`] },
+  )();
+}
 
 // ---------------------------------------------------------------------------
 // S3 URLs — the guestCookies shim used internally does NOT call cookies()
