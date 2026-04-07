@@ -14,6 +14,7 @@ import {
   getMarkdownContentServer,
   resolveMarkdownImagesServer,
 } from "@/lib/blog-storage.server";
+import { fetchLikeCountByBlogIdPublic } from "@/lib/appsync-public-fetch.server";
 import { resolveAvatarUrlServer } from "@/lib/profile-storage.server";
 
 // ---------------------------------------------------------------------------
@@ -82,14 +83,19 @@ export const cachedResolveAvatarUrl = unstable_cache(
   { revalidate: 10800, tags: ["avatars"] }, // 3 hours
 );
 
-export const cachedGetMarkdownContent = unstable_cache(
-  (path: string) => getMarkdownContentServer(path),
-  ["get-markdown-content"],
+// Combines fetch + image resolution in one cached call, keyed by contentPath + slug
+// (small strings) instead of full markdown content — avoids oversized cache keys.
+export const cachedGetResolvedMarkdown = unstable_cache(
+  async (contentPath: string, _slug: string) => {
+    const rawMarkdown = await getMarkdownContentServer(contentPath);
+    return resolveMarkdownImagesServer(rawMarkdown);
+  },
+  ["get-resolved-markdown"],
   { revalidate: 10800 }, // 3 hours
 );
 
-export const cachedResolveMarkdownImages = unstable_cache(
-  (markdown: string, slug: string) => resolveMarkdownImagesServer(markdown),
-  ["resolve-markdown-images"],
-  { revalidate: 10800 }, // 3 hours
+export const cachedGetLikeCountByBlogId = unstable_cache(
+  (blogId: string) => fetchLikeCountByBlogIdPublic(blogId),
+  ["get-like-count-by-blog-id"],
+  { revalidate: 60 }, // 1 min — likes change frequently
 );

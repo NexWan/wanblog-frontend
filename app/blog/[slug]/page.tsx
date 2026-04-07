@@ -10,13 +10,12 @@ import {
   cachedGetProfileByUserId,
   cachedResolveCoverImageUrl,
   cachedResolveAvatarUrl,
-  cachedGetMarkdownContent,
-  cachedResolveMarkdownImages,
+  cachedGetResolvedMarkdown,
+  cachedGetLikeCountByBlogId,
 } from "@/lib/cached-queries.server";
 import {
   fetchAllPublishedBlogsPublic,
   fetchCommentsByBlogIdPublic,
-  fetchLikeCountByBlogIdPublic,
 } from "@/lib/appsync-public-fetch.server";
 
 export const revalidate = 300;
@@ -93,18 +92,17 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     );
   }
 
-  const [rawMarkdown, coverImageUrl, comments, likeCount, authorProfile] = await Promise.all([
-    cachedGetMarkdownContent(blog.contentPath),
+  const [markdownContent, coverImageUrl, comments, likeCount, authorProfile] = await Promise.all([
+    cachedGetResolvedMarkdown(blog.contentPath, slug),
     cachedResolveCoverImageUrl(blog.coverImagePath ?? "").catch(() => null),
     fetchCommentsByBlogIdPublic(blog.blogId),
-    fetchLikeCountByBlogIdPublic(blog.blogId),
+    cachedGetLikeCountByBlogId(blog.blogId),
     cachedGetProfileByUserId(blog.authorUserId),
   ]);
 
-  const [markdownContent, authorAvatarUrl] = await Promise.all([
-    cachedResolveMarkdownImages(rawMarkdown, slug),
-    cachedResolveAvatarUrl(authorProfile?.avatarPath ?? "").catch(() => null),
-  ]);
+  const authorAvatarUrl = await cachedResolveAvatarUrl(
+    authorProfile?.avatarPath ?? "",
+  ).catch(() => null);
 
   const uniqueCommentAuthorIds = [...new Set(comments.map((c) => c.authorUserId))];
   const commentAuthorProfiles = await Promise.all(
