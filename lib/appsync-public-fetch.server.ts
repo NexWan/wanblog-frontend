@@ -70,7 +70,7 @@ export async function fetchPublishedBlogsPublic(limit?: number): Promise<Blog[]>
     listBlogsByStatus: { items: Blog[] };
   }>(
     `query ListBlogsByStatus($limit: Int) {
-      listBlogsByStatus(status: "PUBLISHED", sortDirection: DESC, limit: $limit) {
+      listBlogsByStatus(status: PUBLISHED, sortDirection: DESC, limit: $limit) {
         items { ${BLOG_FIELDS} }
       }
     }`,
@@ -84,7 +84,7 @@ export async function fetchAllPublishedBlogsPublic(): Promise<Blog[]> {
     listBlogsByStatus: { items: Blog[] };
   }>(
     `query ListAllPublishedBlogs {
-      listBlogsByStatus(status: "PUBLISHED", sortDirection: DESC) {
+      listBlogsByStatus(status: PUBLISHED, sortDirection: DESC) {
         items { ${BLOG_FIELDS} }
       }
     }`,
