@@ -7,6 +7,6 @@ export type EnrichedBlog = {
   authorName: string;
   publishedAt: string | null;
   coverImageUrl: string | null;
-  likeCount: number;
+  likeCount?: number;
   status: string;
 };

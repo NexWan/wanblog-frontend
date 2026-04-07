@@ -36,9 +36,9 @@ export default function BlogFilter({ blogs }: { blogs: EnrichedBlog[] }) {
         case "date-asc":
           return (a.publishedAt ?? "").localeCompare(b.publishedAt ?? "");
         case "likes-desc":
-          return b.likeCount - a.likeCount;
+          return (b.likeCount ?? 0) - (a.likeCount ?? 0);
         case "likes-asc":
-          return a.likeCount - b.likeCount;
+          return (a.likeCount ?? 0) - (b.likeCount ?? 0);
       }
     });
   }, [blogs, search, activeTag, sort]);
