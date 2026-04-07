@@ -16,6 +16,8 @@ The app is built with the Next.js App Router and integrates with an Amplify back
 - Lets admins create, edit, and publish blog posts with a side-by-side markdown editor and live preview.
 - Uploads markdown and media assets to Amplify Storage, with controls for image size and fill mode.
 - Publishes draft assets by copying content from draft storage paths to published paths.
+- Serves public pages with ISR and `unstable_cache` so repeat visits are fast without stale data.
+- Busts the cache on demand whenever an admin publishes or updates a post or profile.
 
 ## App Areas
 
@@ -31,6 +33,7 @@ The app is built with the Next.js App Router and integrates with an Amplify back
 | `/admin/blogs` | Admin blog management list |
 | `/admin/blogs/new` | Blog creation flow |
 | `/admin/blogs/[id]/edit` | Blog editor with markdown, live preview, media handling |
+| `/api/revalidate` | Protected POST endpoint for external on-demand cache invalidation |
 
 ## Stack
 
@@ -90,6 +93,58 @@ Blog content (published markdown and media) is in the `blogs/*` S3 path, which a
 
 The same approach is used for avatar resolution in `lib/profile-storage.server.ts`.
 
+## Caching Strategy
+
+Public-facing pages use ISR and `unstable_cache` to avoid re-fetching data on every request. Admin pages (`/admin/**`) remain fully dynamic and are never cached.
+
+### Page-level ISR
+
+| Page | Strategy | Revalidation |
+|---|---|---|
+| `/` | ISR | 5 minutes |
+| `/blog` | ISR | 5 minutes |
+| `/blog/[slug]` | SSG + ISR | 5 minutes |
+| `/user/[username]` | ISR | 10 minutes |
+
+The blog detail page additionally uses `generateStaticParams` to pre-render all published post slugs at build time. New slugs are rendered on first request and cached (`dynamicParams = true`).
+
+### Data-level Caching
+
+All public data fetching goes through `lib/cached-queries.server.ts`, which wraps each query in `unstable_cache` with a TTL and cache tags:
+
+| Data | TTL | Tag |
+|---|---|---|
+| Published blog list | 5 min | `published-blogs` |
+| Blog by slug | 5 min | `published-blogs` |
+| Resolved markdown content | 3 hours | `published-blogs` |
+| User profile by ID | 10 min | `profile-{userId}` |
+| User profile by username | 10 min | `profile-username-{username}` |
+| Cover image URL (S3) | 3 hours | `cover-images` |
+| Avatar URL (S3) | 3 hours | `avatars` |
+| Like count | 1 minute | — |
+
+Profile caches use a factory pattern (a new `unstable_cache` instance per user) so `revalidateTag("profile-{userId}")` invalidates only that user's entry, not everyone's.
+
+### Cookie-free AppSync Client
+
+The Amplify SDK's server client (`generateServerClientUsingCookies`) calls `cookies()` from `next/headers`, which is request-bound and cannot run inside `unstable_cache` or `generateStaticParams`. A dedicated cookie-free client (`lib/appsync-public-fetch.server.ts`) makes raw `fetch` calls to AppSync using the API key directly. This client is used for all cached and static-param contexts.
+
+### On-demand Cache Invalidation
+
+When an admin publishes or updates a post, the cache is busted immediately via two complementary mechanisms:
+
+1. **Server Action** (`app/actions/revalidate.ts`) — called directly from the blog editor after a successful publish. Runs server-side, keeping the revalidation secret off the client bundle.
+2. **HTTP endpoint** (`/api/revalidate`) — a protected POST route for external triggers (e.g. Lambda, CI/CD pipelines). Requests must include the `x-revalidate-secret` header matching `REVALIDATION_SECRET`. The secret is compared using a constant-time algorithm to prevent timing attacks.
+
+Both paths call `revalidateTag` and `revalidatePath` to bust the relevant entries.
+
+### Auth-sensitive UI
+
+ISR requires server components to be free of request-bound cookie reads. UI that depends on the current user's identity is handled by dedicated client components that perform their auth check on mount:
+
+- `AdminSidebarBlock` — checks Cognito group membership and renders the admin navigation block only for admins.
+- `OwnProfileActions` — checks whether the signed-in user owns the profile page and conditionally renders the "Edit profile" link and profile bootstrapper.
+
 ## Authentication and Access Control
 
 Authentication is powered by Amplify Auth and Cognito. The frontend uses a custom auth screen.
@@ -104,11 +159,13 @@ Access rules:
 
 ### Blog Listing and Search
 
-The `/blog` page fetches all published posts server-side, including resolved cover image URLs and like counts, then passes them to the `BlogFilter` client component. Filtering and sorting happen entirely in memory with `useMemo`, with no extra API calls:
+The `/blog` page fetches all published posts server-side, including resolved cover image URLs and author profiles, then passes them to the `BlogFilter` client component. Filtering and sorting happen entirely in memory with `useMemo`, with no extra API calls:
 
 - Search by title (case-insensitive substring)
 - Filter by tag pill (derived from actual post tags)
 - Sort by newest, oldest, most liked, or least liked
+
+Like counts are seeded as `0` server-side and hydrated client-side by `LikeButton` to keep the listing page fully cacheable.
 
 ### Dynamic Home Page
 
@@ -116,7 +173,7 @@ The home page fetches the four most recent published posts and resolves cover im
 
 ### User Profiles
 
-User profiles are stored in a `UserProfile` DynamoDB record keyed by Cognito `userId`. On first visit to `/user/[username]`, if the profile doesn't exist and the URL matches the current user's preferred username, the app bootstraps the profile automatically.
+User profiles are stored in a `UserProfile` DynamoDB record keyed by Cognito `userId`. On first visit to `/user/[username]`, if the profile doesn't exist and the URL matches the current user's preferred username, the app bootstraps the profile automatically via `OwnProfileActions` (client-side).
 
 Profile pages show:
 - Avatar (resolved server-side with guest credentials)
@@ -138,25 +195,33 @@ The editor supports:
 - Existing asset browser with insert and "set as cover" actions
 - Save Draft Markdown → Prepare Publish Assets → Create/Update record workflow
 
+After a successful publish, the editor triggers on-demand cache revalidation so the new post is visible immediately without waiting for the ISR timer.
+
 Image size and fit are encoded in the markdown alt text as `Caption|size|fit` (e.g. `My photo|half|contain`) so no schema changes are needed. The renderer strips the suffix before displaying it as visible alt text.
 
 ### Inline Image Resolution
 
 Blog markdown uses an internal `amplify://` URI scheme for image references. Before the markdown reaches the client, `resolveMarkdownImagesServer` in `lib/blog-storage.server.ts` replaces all `amplify://` references with pre-signed HTTPS URLs using guest credentials. The client component (`MarkdownPreview`) only renders — it never resolves storage URLs for published content.
 
+Pre-signed S3 URLs are generated with a 12-hour expiry, which safely covers the 3-hour cache TTL used for resolved markdown and image URLs.
+
 ## Project Structure
 
 ```text
 app/
-  page.tsx                 Homepage
+  page.tsx                 Homepage (ISR, 5 min)
   auth/                    Custom auth flow
   blog/
-    page.tsx               Blog listing (server component)
-    [slug]/page.tsx        Blog post detail (server component)
+    page.tsx               Blog listing (ISR, 5 min)
+    [slug]/page.tsx        Blog post detail (SSG + ISR, 5 min)
   user/
-    [username]/page.tsx    User profile page
+    [username]/page.tsx    User profile page (ISR, 10 min)
     [username]/edit/page.tsx  Profile editor page
-  admin/                   Protected admin pages
+  admin/                   Protected admin pages (fully dynamic)
+  api/
+    revalidate/route.ts    Protected on-demand cache invalidation endpoint
+  actions/
+    revalidate.ts          Server Action for cache invalidation after publish
 
 components/
   auth/                    Auth UI components
@@ -168,25 +233,29 @@ components/
     MarkdownPreview.tsx    GFM markdown renderer with image controls
     TagList.tsx            Tag pill list
   profile/
+    OwnProfileActions.tsx  Client component — edit link + bootstrapper for profile owner
     ProfileAvatar.tsx      Avatar with server-resolved URL support
     ProfileBootstrapper.tsx Auto-creates profile on first visit
     ProfileEditor.tsx      Profile edit form
+  AdminSidebarBlock.tsx    Client component — admin navigation, visible to admin group only
 
 lib/
-  auth.ts                  Admin guard and current-user helpers
-  blog-data.ts             Client-side Amplify Data mutations
-  blog-data.server.ts      Server-side Amplify Data reads
-  blog-storage.ts          Storage upload/publish helpers (client)
-  blog-storage.server.ts   Storage reads + inline image resolution (server, guest credentials)
-  profile-data.ts          Client-side profile mutations
-  profile-data.server.ts   Server-side profile reads
-  profile-storage.ts       Avatar upload helpers (client)
-  profile-storage.server.ts Avatar URL resolution (server, guest credentials)
-  profile-types.ts         UserProfile, CreateProfileInput, UpdateProfileInput types
-  enriched-blog-types.ts   EnrichedBlog type (server → client boundary)
-  amplifyServerUtils.ts    Server-side Amplify runner
-  amplify-outputs.server.ts Server-side config loading
-  amplify-outputs.shared.ts Shared config and storage helpers
+  appsync-public-fetch.server.ts  Cookie-free AppSync client for cached/static contexts
+  cached-queries.server.ts        unstable_cache wrappers with TTL and tag-based invalidation
+  auth.ts                         Admin guard and current-user helpers
+  blog-data.ts                    Client-side Amplify Data mutations
+  blog-data.server.ts             Server-side Amplify Data reads
+  blog-storage.ts                 Storage upload/publish helpers (client)
+  blog-storage.server.ts          Storage reads + inline image resolution (server, guest credentials)
+  profile-data.ts                 Client-side profile mutations
+  profile-data.server.ts          Server-side profile reads
+  profile-storage.ts              Avatar upload helpers (client)
+  profile-storage.server.ts       Avatar URL resolution (server, guest credentials)
+  profile-types.ts                UserProfile, CreateProfileInput, UpdateProfileInput types
+  enriched-blog-types.ts          EnrichedBlog type (server → client boundary)
+  amplifyServerUtils.ts           Server-side Amplify runner
+  amplify-outputs.server.ts       Server-side config loading
+  amplify-outputs.shared.ts       Shared config and storage helpers
 ```
 
 ## Local Development
@@ -212,6 +281,8 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+> **Note:** ISR and `unstable_cache` are disabled in `next dev`. To verify caching behavior, run a production build locally with `next build && next start`.
+
 ### Lint
 
 ```bash
@@ -228,6 +299,13 @@ The production build pipeline in [`amplify.yml`](amplify.yml):
 2. Installs dependencies with `bun install`
 3. Generates outputs with `ampx generate outputs`
 4. Builds the Next.js app with `bun run build`
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `REVALIDATION_SECRET` | Yes (production) | Shared secret for the `/api/revalidate` endpoint. Set in Amplify Hosting environment variables. |
+| `NEXT_PUBLIC_BASE_URL` | Recommended | Full origin URL (e.g. `https://www.wanblog.com`) used for Open Graph `url` fields. |
 
 ## Deployment
 
@@ -246,3 +324,5 @@ The frontend is deployed with AWS Amplify Hosting.
 - **Comment editing** — users can delete their own comments but cannot edit them.
 - **Profile bootstrapping** — profile creation currently happens on first profile page visit; there is no post-signup onboarding flow.
 - **Tests** — no automated tests for auth guards, blog CRUD flows, or the publish pipeline.
+- **Comment cache** — comments are fetched uncached at ISR render time. High-traffic posts will still hit AppSync on every ISR cycle for the comment query.
+- **OwnProfileActions hydration gap** — the edit button is absent until the client-side auth check resolves on mount, causing a brief flash for profile owners.
