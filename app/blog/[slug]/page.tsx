@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
     openGraph: {
       title: blog.title,
       description,
-      url: `/blog/${slug}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/blog/${slug}`,
       type: "article",
       publishedTime: blog.publishedAt ?? undefined,
       tags: safeTags,
