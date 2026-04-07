@@ -1,25 +1,31 @@
 import Link from "next/link";
-import { getCurrentUserGroups, isCurrentUserAdmin } from "@/lib/auth";
-import { listLatestPublishedBlogs } from "@/lib/blog-data.server";
-import { resolveCoverImageUrlServer } from "@/lib/blog-storage.server";
-import { getProfileByUserIdPublic } from "@/lib/profile-data.server";
+import {
+  cachedListLatestPublishedBlogs,
+  cachedResolveCoverImageUrl,
+  cachedGetProfileByUserId,
+} from "@/lib/cached-queries.server";
 import PostCard from "@/components/PostCard";
+import AdminSidebarBlock from "@/components/AdminSidebarBlock";
+
+export const revalidate = 300;
 
 export default async function Home() {
-  const [groups, isAdmin, latestBlogs] = await Promise.all([
-    getCurrentUserGroups(),
-    isCurrentUserAdmin(),
-    listLatestPublishedBlogs(4),
-  ]);
+  const latestBlogs = await cachedListLatestPublishedBlogs(4);
 
   const uniqueAuthorIds = [...new Set(latestBlogs.map((b) => b.authorUserId))];
   const [coverResults, profileResults] = await Promise.all([
-    Promise.all(latestBlogs.map((blog) => resolveCoverImageUrlServer(blog.coverImagePath ?? null))),
-    Promise.all(uniqueAuthorIds.map((id) => getProfileByUserIdPublic(id).catch(() => null))),
+    Promise.all(
+      latestBlogs.map((blog) =>
+        cachedResolveCoverImageUrl(blog.coverImagePath ?? "").catch(() => null),
+      ),
+    ),
+    Promise.all(
+      uniqueAuthorIds.map((id) => cachedGetProfileByUserId(id).catch(() => null)),
+    ),
   ]);
 
   const profileMap = Object.fromEntries(
-    uniqueAuthorIds.map((id, i) => [id, profileResults[i]])
+    uniqueAuthorIds.map((id, i) => [id, profileResults[i]]),
   );
 
   const recentPosts = latestBlogs.map((blog, i) => {
@@ -33,8 +39,8 @@ export default async function Home() {
   const exploreTags = [
     ...new Set(
       recentPosts.flatMap((post) =>
-        (post.tags ?? []).filter((t): t is string => t !== null)
-      )
+        (post.tags ?? []).filter((t): t is string => t !== null),
+      ),
     ),
   ];
 
@@ -42,15 +48,15 @@ export default async function Home() {
     <main className="px-6 max-w-7xl mx-auto">
       {/* Hero Section */}
       <section className="mb-20">
-        <Link href={`/blog`} className="relative group block overflow-hidden rounded-xl bg-surface-container h-[716px] flex items-end">
+        <Link
+          href={`/blog`}
+          className="relative group block overflow-hidden rounded-xl bg-surface-container h-[716px] flex items-end"
+        >
           <div className="absolute inset-0 bg-gradient-to-t from-surface-dim via-transparent to-transparent"></div>
           <div className="relative z-10 p-8 md:p-16 max-w-4xl">
             <div className="flex items-center gap-4 mb-6">
               <span className="font-label text-xs uppercase tracking-widest text-tertiary bg-tertiary/10 px-3 py-1 rounded-full">
                 WanBlog Beta
-              </span>
-              <span className="font-label text-xs uppercase tracking-widest text-on-surface-variant">
-                Session info: {isAdmin ? "Admin access" : "User"}
               </span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-6 text-on-surface leading-tight tracking-tighter font-headline">
@@ -60,8 +66,10 @@ export default async function Home() {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-on-surface-variant mb-8 max-w-2xl font-body leading-relaxed">
-              This blog is a collection of deep dives into backend systems, parsing strategies, cloud architectures, and low-level implementations. 
-              I focus on understanding problems at their core — not just using tools, but building them.
+              This blog is a collection of deep dives into backend systems, parsing
+              strategies, cloud architectures, and low-level implementations. I focus on
+              understanding problems at their core — not just using tools, but building
+              them.
             </p>
             <div className="primary-gradient text-on-primary w-fit px-8 py-4 rounded-lg font-bold flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-primary/20">
               Read articles
@@ -78,7 +86,7 @@ export default async function Home() {
             <h2 className="text-3xl font-bold tracking-tight font-headline">Latest Posts</h2>
             <div className="h-px flex-grow mx-8 bg-outline-variant/20 hidden md:block"></div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16">
             {recentPosts.map((post) => (
               <PostCard
@@ -100,18 +108,9 @@ export default async function Home() {
 
         {/* Sidebar */}
         <aside className="lg:col-span-4 space-y-16">
-          {/* Admin Block */}
-          {isAdmin && (
-            <section className="bg-surface-container rounded-xl p-8 border-l-4 border-primary">
-              <h3 className="text-2xl font-bold mb-4 font-headline">Administration</h3>
-              <p className="text-on-surface-variant mb-6 text-sm font-body leading-relaxed">
-                If you have access, you can manage the content listed on the platform here. Groups: {groups.join(", ") || "none"}
-              </p>
-              <Link href="/admin/blogs" className="block w-full text-center primary-gradient text-on-primary font-bold py-3 rounded-lg shadow-lg shadow-primary/10">
-                Manage Posts
-              </Link>
-            </section>
-          )}
+          {/* Admin Block — client component, renders only for admins */}
+          <AdminSidebarBlock />
+
           {/* Tags */}
           <section>
             <h3 className="font-label text-sm uppercase tracking-[0.2em] text-on-surface-variant mb-8 flex items-center">
@@ -121,7 +120,10 @@ export default async function Home() {
             <div className="flex flex-wrap gap-2">
               {exploreTags.length > 0 ? (
                 exploreTags.map((tag) => (
-                  <span key={tag} className="bg-surface-container-high hover:bg-primary hover:text-on-primary transition-colors px-4 py-2 rounded-full text-xs font-bold font-label cursor-pointer">
+                  <span
+                    key={tag}
+                    className="bg-surface-container-high hover:bg-primary hover:text-on-primary transition-colors px-4 py-2 rounded-full text-xs font-bold font-label cursor-pointer"
+                  >
                     {tag}
                   </span>
                 ))
