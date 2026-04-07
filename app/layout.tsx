@@ -22,6 +22,9 @@ const themeScript = `
 export const metadata: Metadata = {
   title: "WanBlog",
   description: "WanBlog frontend",
+  icons: {
+    icon: "/tsuchinoko.svg",
+  },
 };
 
 export default function RootLayout({
