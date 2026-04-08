@@ -69,6 +69,36 @@ export async function getMarkdownContentServer(path: string) {
   return response.text();
 }
 
+/**
+ * Reads markdown content from a draft S3 path using the authenticated request cookies.
+ * Use this in admin server components where the path is under `drafts/` — those objects
+ * require Identity Pool credentials tied to the admin's Cognito session, not guest access.
+ */
+export async function getMarkdownContentServerAuthenticated(path: string) {
+  const { cookies } = await import("next/headers");
+  const { url } = await runWithAmplifyServerContext({
+    nextServerContext: { cookies },
+    operation: async (contextSpec) => {
+      const result = await getUrl(contextSpec, {
+        path,
+        options: {
+          bucket: BLOG_STORAGE_BUCKET,
+          validateObjectExistence: true,
+          expiresIn: 300, // short TTL — admin-only, not cached
+        },
+      });
+      return { url: result.url.toString() };
+    },
+  });
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch draft markdown content from ${url}`);
+  }
+
+  return response.text();
+}
+
 const amplifyImagePattern = /!\[([^\]]*)\]\(amplify:\/\/([^)]+)\)/g;
 
 /**

@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import BlogEditorShell from "@/components/blog/BlogEditorShell";
 import { getBlogByIdForAdmin } from "@/lib/blog-data.server";
-import { getMarkdownContentServer } from "@/lib/blog-storage.server";
+import { getMarkdownContentServerAuthenticated } from "@/lib/blog-storage.server";
 
 type EditBlogPageProps = {
   params: Promise<{
@@ -30,7 +30,7 @@ export default async function EditBlogPage({ params }: EditBlogPageProps) {
     );
   }
 
-  const markdownContent = await getMarkdownContentServer(blog.contentPath);
+  const markdownContent = await getMarkdownContentServerAuthenticated(blog.contentPath);
   const initialTags = (blog.tags ?? []).filter(
     (tag: string | null | undefined): tag is string => Boolean(tag)
   );
