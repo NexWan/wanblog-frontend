@@ -10,12 +10,11 @@ import {
   fetchProfileByUsernamePublic,
 } from "@/lib/appsync-public-fetch.server";
 import {
-  resolveCoverImageUrlServer,
+  getProxyImageUrl,
   getMarkdownContentServer,
   resolveMarkdownImagesServer,
 } from "@/lib/blog-storage.server";
 import { fetchLikeCountByBlogIdPublic } from "@/lib/appsync-public-fetch.server";
-import { resolveAvatarUrlServer } from "@/lib/profile-storage.server";
 
 // ---------------------------------------------------------------------------
 // Blog data
@@ -67,33 +66,35 @@ export function cachedGetProfileByUsername(username: string) {
 }
 
 // ---------------------------------------------------------------------------
-// S3 URLs — the guestCookies shim used internally does NOT call cookies()
-// from next/headers, so these are safe inside unstable_cache.
+// S3 image URLs — return stable proxy URLs (/api/image?path=...) instead of
+// presigned URLs. Proxy URLs never expire, eliminating the timing mismatch
+// between S3 presigned URL lifetime and Next.js cache TTLs.
 // ---------------------------------------------------------------------------
 
-export const cachedResolveCoverImageUrl = unstable_cache(
-  (path: string) => resolveCoverImageUrlServer(path),
-  ["resolve-cover-image-url"],
-  { revalidate: 240, tags: ["cover-images"] }, // 4 minutes; avoid stale signed URLs
-);
-
-export function cachedResolveAvatarUrl(avatarPath: string, userId: string) {
-  return unstable_cache(
-    () => resolveAvatarUrlServer(avatarPath),
-    [`avatar-url-${userId}`],
-    { revalidate: 240, tags: [`avatar-${userId}`] }, // 4 minutes; avoid stale signed URLs
-  )();
+export async function cachedResolveCoverImageUrl(
+  path: string | null | undefined,
+): Promise<string | null> {
+  if (!path) return null;
+  return getProxyImageUrl(path);
 }
 
-// Combines fetch + image resolution in one cached call, keyed by contentPath + slug
-// (small strings) instead of full markdown content — avoids oversized cache keys.
+export function cachedResolveAvatarUrl(
+  avatarPath: string,
+  _userId: string,
+): Promise<string | null> {
+  if (!avatarPath) return Promise.resolve(null);
+  return Promise.resolve(getProxyImageUrl(avatarPath));
+}
+
+// Combines fetch + image resolution in one cached call, keyed by contentPath + slug.
+// Inline images are now proxy URLs, so the cached markdown never contains expiring URLs.
 export const cachedGetResolvedMarkdown = unstable_cache(
   async (contentPath: string, _slug: string) => {
     const rawMarkdown = await getMarkdownContentServer(contentPath);
     return resolveMarkdownImagesServer(rawMarkdown);
   },
   ["get-resolved-markdown"],
-  { revalidate: 240, tags: ["published-blogs"] }, // 4 minutes; markdown includes signed image URLs
+  { revalidate: 3600, tags: ["published-blogs"] }, // 1 hour; proxy URLs don't expire
 );
 
 export const cachedGetLikeCountByBlogId = unstable_cache(
