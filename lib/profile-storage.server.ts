@@ -33,7 +33,7 @@ export async function resolveAvatarUrlServer(
       operation: (contextSpec) =>
         getUrl(contextSpec, {
           path: avatarPath,
-          options: { bucket: PROFILE_STORAGE_BUCKET, expiresIn: 43200 }, // 12 hours
+          options: { bucket: PROFILE_STORAGE_BUCKET, expiresIn: 1800 }, // 30 minutes
         }),
     });
     return result.url.toString();
