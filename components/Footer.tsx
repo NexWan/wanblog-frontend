@@ -22,7 +22,7 @@ export default function Footer() {
         </div>
 
         <div className="text-slate-500 font-label text-xs uppercase tracking-widest text-center md:text-right">
-          © 2024 WanBlog. <span className="text-primary">Designed for the bold.</span>
+          © {new Date().getFullYear()} WanBlog. <span className="text-primary">Designed with love.</span>
         </div>
       </div>
     </footer>
