@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
     revalidateTag(`profile-username-${username}`, {});
     revalidateTag(`avatar-${userId}`, {});
     revalidatePath(`/user/${username}`);
+    revalidatePath("/");
+    revalidatePath("/blog");
     return NextResponse.json({ revalidated: true, type: "profile", userId, username });
   }
 
