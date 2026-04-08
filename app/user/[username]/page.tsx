@@ -39,7 +39,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 
   const [blogs, profileAvatarUrl] = await Promise.all([
     cachedListPublishedBlogsByAuthor(profile.userId),
-    cachedResolveAvatarUrl(profile.avatarPath ?? "").catch(() => null),
+    cachedResolveAvatarUrl(profile.avatarPath ?? "", profile.userId).catch(() => null),
   ]);
   const coverResults = await Promise.all(
     blogs.map((blog) =>
