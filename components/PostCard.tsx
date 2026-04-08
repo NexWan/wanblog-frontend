@@ -2,6 +2,13 @@ import React from 'react';
 import Link from 'next/link';
 import LikeButton from './blog/LikeButton';
 
+const postDateFormatter = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
 type PostCardPost = {
   title: string;
   slug: string;
@@ -20,7 +27,9 @@ export default function PostCard({ post }: { post: PostCardPost }) {
   const excerpt = post.excerpt || '';
   const authorName = post.authorName || 'Author';
   const tag = (post.tags && post.tags.length > 0) ? post.tags[0] : 'Blog';
-  const date = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-US") : 'Draft';
+  const date = post.publishedAt
+    ? postDateFormatter.format(new Date(post.publishedAt))
+    : "Draft";
 
   return (
     <Link href={`/blog/${slug}`} className="group cursor-pointer block">

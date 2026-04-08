@@ -74,14 +74,14 @@ export function cachedGetProfileByUsername(username: string) {
 export const cachedResolveCoverImageUrl = unstable_cache(
   (path: string) => resolveCoverImageUrlServer(path),
   ["resolve-cover-image-url"],
-  { revalidate: 10800, tags: ["cover-images"] }, // 3 hours
+  { revalidate: 240, tags: ["cover-images"] }, // 4 minutes; avoid stale signed URLs
 );
 
 export function cachedResolveAvatarUrl(avatarPath: string, userId: string) {
   return unstable_cache(
     () => resolveAvatarUrlServer(avatarPath),
     [`avatar-url-${userId}`],
-    { revalidate: 10800, tags: [`avatar-${userId}`] }, // 3 hours
+    { revalidate: 240, tags: [`avatar-${userId}`] }, // 4 minutes; avoid stale signed URLs
   )();
 }
 
@@ -93,7 +93,7 @@ export const cachedGetResolvedMarkdown = unstable_cache(
     return resolveMarkdownImagesServer(rawMarkdown);
   },
   ["get-resolved-markdown"],
-  { revalidate: 10800, tags: ["published-blogs"] }, // 3 hours
+  { revalidate: 240, tags: ["published-blogs"] }, // 4 minutes; markdown includes signed image URLs
 );
 
 export const cachedGetLikeCountByBlogId = unstable_cache(
