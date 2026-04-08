@@ -97,7 +97,7 @@ export default async function Home() {
                   excerpt: post.excerpt,
                   authorName: post.authorName,
                   tags: post.tags,
-                  publishedAt: post.publishedAt ?? new Date().toISOString(),
+                  publishedAt: post.publishedAt ?? null,
                   coverImageUrl: post.coverImageUrl,
                   blogId: post.blogId,
                 }}

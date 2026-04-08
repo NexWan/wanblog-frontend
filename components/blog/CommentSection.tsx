@@ -27,11 +27,12 @@ type AuthState = {
 
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  });
+    timeZone: "UTC",
+  }).format(new Date(dateStr));
 }
 
 export default function CommentSection({ blogId, initialComments, initialAvatarUrls }: CommentSectionProps) {

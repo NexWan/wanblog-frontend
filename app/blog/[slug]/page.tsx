@@ -129,6 +129,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
         year: "numeric",
         month: "long",
         day: "numeric",
+        timeZone: "UTC",
       })
     : "Draft";
   const tag = safeTags.length > 0 ? safeTags[0] : "Blog";
