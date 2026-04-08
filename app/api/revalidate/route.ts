@@ -42,7 +42,10 @@ export async function POST(req: NextRequest) {
     const { userId, username } = payload;
     revalidateTag(`profile-${userId}`, {});
     revalidateTag(`profile-username-${username}`, {});
+    revalidateTag(`avatar-${userId}`, {});
     revalidatePath(`/user/${username}`);
+    revalidatePath("/");
+    revalidatePath("/blog");
     return NextResponse.json({ revalidated: true, type: "profile", userId, username });
   }
 

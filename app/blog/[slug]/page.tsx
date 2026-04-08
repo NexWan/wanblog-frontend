@@ -102,6 +102,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
   const authorAvatarUrl = await cachedResolveAvatarUrl(
     authorProfile?.avatarPath ?? "",
+    blog.authorUserId,
   ).catch(() => null);
 
   const uniqueCommentAuthorIds = [...new Set(comments.map((c) => c.authorUserId))];
@@ -114,6 +115,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       const profile = commentAuthorProfiles[i];
       commentAvatarUrls[userId] = await cachedResolveAvatarUrl(
         profile?.avatarPath ?? "",
+        userId,
       ).catch(() => null);
     }),
   );
