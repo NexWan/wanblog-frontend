@@ -98,31 +98,31 @@ export async function getMarkdownContentServerAuthenticated(path: string) {
   return response.text();
 }
 
+/**
+ * Returns a stable server-side proxy URL for an S3 image path.
+ * The proxy route (/api/image) generates a fresh presigned URL on each browser request,
+ * so this URL never expires and can safely be embedded in cached HTML.
+ */
+export function getProxyImageUrl(path: string): string {
+  return `/api/image?path=${encodeURIComponent(path)}`;
+}
+
 const amplifyImagePattern = /!\[([^\]]*)\]\(amplify:\/\/([^)]+)\)/g;
 
 /**
- * Replaces all amplify:// image references in markdown with pre-signed HTTPS URLs
- * using guest credentials so authenticated non-admin users can view inline images.
+ * Replaces all amplify:// image references in markdown with proxy URLs.
+ * Proxy URLs are stable and never expire, so the cached markdown is always valid.
  */
-export async function resolveMarkdownImagesServer(markdown: string): Promise<string> {
+export function resolveMarkdownImagesServer(markdown: string): string {
   const imagePaths = [...new Set(
     Array.from(markdown.matchAll(amplifyImagePattern), (m) => m[2])
   )];
 
   if (imagePaths.length === 0) return markdown;
 
-  const resolvedEntries = await Promise.all(
-    imagePaths.map(async (path) => {
-      const result = await resolveAmplifyImageUrlServer(path).catch(() => null);
-      return [path, result?.url ?? null] as const;
-    })
-  );
-
   let resolved = markdown;
-  for (const [path, url] of resolvedEntries) {
-    if (url) {
-      resolved = resolved.replaceAll(`amplify://${path}`, url);
-    }
+  for (const path of imagePaths) {
+    resolved = resolved.replaceAll(`amplify://${path}`, getProxyImageUrl(path));
   }
 
   return resolved;
