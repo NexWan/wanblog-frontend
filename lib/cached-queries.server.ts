@@ -77,11 +77,13 @@ export const cachedResolveCoverImageUrl = unstable_cache(
   { revalidate: 10800, tags: ["cover-images"] }, // 3 hours
 );
 
-export const cachedResolveAvatarUrl = unstable_cache(
-  (path: string) => resolveAvatarUrlServer(path),
-  ["resolve-avatar-url"],
-  { revalidate: 10800, tags: ["avatars"] }, // 3 hours
-);
+export function cachedResolveAvatarUrl(avatarPath: string, userId: string) {
+  return unstable_cache(
+    () => resolveAvatarUrlServer(avatarPath),
+    [`avatar-url-${userId}`],
+    { revalidate: 10800, tags: [`avatar-${userId}`] }, // 3 hours
+  )();
+}
 
 // Combines fetch + image resolution in one cached call, keyed by contentPath + slug
 // (small strings) instead of full markdown content — avoids oversized cache keys.

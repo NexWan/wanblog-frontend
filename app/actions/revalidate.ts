@@ -12,6 +12,6 @@ export async function revalidateBlogCache(slug: string) {
 export async function revalidateProfileCache(userId: string, username: string) {
   revalidateTag(`profile-${userId}`, {});
   revalidateTag(`profile-username-${username}`, {});
-  revalidateTag("avatars", {});
+  revalidateTag(`avatar-${userId}`, {});
   revalidatePath(`/user/${username}`);
 }
