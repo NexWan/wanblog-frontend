@@ -1,15 +1,15 @@
 import {
-  cachedListAllPublishedBlogs,
   cachedResolveCoverImageUrl,
   cachedGetProfileByUserId,
 } from "@/lib/cached-queries.server";
+import { fetchAllPublishedBlogsPublic } from "@/lib/appsync-public-fetch.server";
 import type { EnrichedBlog } from "@/lib/enriched-blog-types";
 import BlogFilter from "@/components/blog/BlogFilter";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export default async function BlogIndexPage() {
-  const publishedBlogs = await cachedListAllPublishedBlogs();
+  const publishedBlogs = await fetchAllPublishedBlogsPublic();
 
   const uniqueAuthorIds = [...new Set(publishedBlogs.map((b) => b.authorUserId))];
   const [coverResults, profileResults] = await Promise.all([
