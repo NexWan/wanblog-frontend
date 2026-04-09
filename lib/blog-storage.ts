@@ -124,21 +124,32 @@ export async function uploadBlogMarkdown({
 
 export async function publishDraftAssets(blogId: string, draftMarkdown: string) {
   const imagePaths = Array.from(new Set(extractAmplifyImagePaths(draftMarkdown)));
+  const pathMap = new Map<string, string>();
 
   for (const draftPath of imagePaths) {
     const publishedPath = toPublishedPath(draftPath, blogId);
 
-    if (publishedPath !== draftPath) {
+    if (publishedPath === draftPath) {
+      // Already in published format or unrecognised path — keep as-is
+      pathMap.set(draftPath, draftPath);
+      continue;
+    }
+
+    try {
       await copy({
         source: { path: draftPath, bucket: BLOG_STORAGE_BUCKET },
         destination: { path: publishedPath, bucket: BLOG_STORAGE_BUCKET },
       });
+      pathMap.set(draftPath, publishedPath);
+    } catch {
+      // Source may not exist; keep the original path rather than breaking publish
+      pathMap.set(draftPath, draftPath);
     }
   }
 
   const publishedMarkdown = rewriteMarkdownAmplifyImagePaths(
     draftMarkdown,
-    (draftPath) => toPublishedPath(draftPath, blogId),
+    (path) => pathMap.get(path) ?? path,
   );
 
   const { path: contentPath } = await uploadBlogMarkdown({
@@ -150,7 +161,7 @@ export async function publishDraftAssets(blogId: string, draftMarkdown: string) 
   return {
     contentPath,
     markdown: publishedMarkdown,
-    imagePaths: imagePaths.map((draftPath) => toPublishedPath(draftPath, blogId)),
+    imagePaths: Array.from(pathMap.values()),
   };
 }
 
@@ -159,7 +170,6 @@ export async function resolveAmplifyImageUrl(path: string) {
     path,
     options: {
       bucket: BLOG_STORAGE_BUCKET,
-      validateObjectExistence: true,
     },
   });
 
@@ -174,8 +184,12 @@ export async function resolveMarkdownAmplifyImages(markdown: string) {
   let resolvedMarkdown = markdown;
 
   for (const path of imagePaths) {
-    const { url } = await resolveAmplifyImageUrl(path);
-    resolvedMarkdown = resolvedMarkdown.replaceAll(`${AMPLIFY_IMAGE_PROTOCOL}${path}`, url);
+    try {
+      const { url } = await resolveAmplifyImageUrl(path);
+      resolvedMarkdown = resolvedMarkdown.replaceAll(`${AMPLIFY_IMAGE_PROTOCOL}${path}`, url);
+    } catch {
+      // Leave the amplify:// reference intact; the img will show as broken
+    }
   }
 
   return resolvedMarkdown;
@@ -219,10 +233,12 @@ export async function uploadCoverImage({
 export async function publishCoverImage(blogId: string, draftCoverPath: string) {
   const publishedPath = draftCoverPath.replace(`drafts/${blogId}/`, `blogs/${blogId}/`);
 
-  await copy({
-    source: { path: draftCoverPath, bucket: BLOG_STORAGE_BUCKET },
-    destination: { path: publishedPath, bucket: BLOG_STORAGE_BUCKET },
-  });
+  if (publishedPath !== draftCoverPath) {
+    await copy({
+      source: { path: draftCoverPath, bucket: BLOG_STORAGE_BUCKET },
+      destination: { path: publishedPath, bucket: BLOG_STORAGE_BUCKET },
+    });
+  }
 
   return publishedPath;
 }
@@ -275,7 +291,15 @@ export async function getMarkdownContent(path: string) {
 }
 
 function toPublishedPath(path: string, blogId: string) {
-  return path.replace(`drafts/${blogId}/`, `blogs/${blogId}/`);
+  // Current format: drafts/{blogId}/... → blogs/{blogId}/...
+  if (path.startsWith(`drafts/${blogId}/`)) {
+    return path.replace(`drafts/${blogId}/`, `blogs/${blogId}/`);
+  }
+  // Old/flat format: drafts/{anything} → blogs/{blogId}/media/{anything}
+  if (path.startsWith("drafts/")) {
+    return `blogs/${blogId}/media/${path.slice("drafts/".length)}`;
+  }
+  return path;
 }
 
 function sanitizeFilename(fileName: string) {
