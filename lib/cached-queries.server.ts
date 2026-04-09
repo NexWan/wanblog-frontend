@@ -3,7 +3,6 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import {
   fetchPublishedBlogsPublic,
-  fetchAllPublishedBlogsPublic,
   fetchBlogBySlugPublic,
   fetchPublishedBlogsByAuthorPublic,
   fetchProfileByUserIdPublic,
@@ -23,12 +22,6 @@ import { fetchLikeCountByBlogIdPublic } from "@/lib/appsync-public-fetch.server"
 export const cachedListLatestPublishedBlogs = unstable_cache(
   (limit: number) => fetchPublishedBlogsPublic(limit),
   ["list-latest-published-blogs"],
-  { revalidate: 300, tags: ["published-blogs"] },
-);
-
-export const cachedListAllPublishedBlogs = unstable_cache(
-  () => fetchAllPublishedBlogsPublic(),
-  ["list-all-published-blogs"],
   { revalidate: 300, tags: ["published-blogs"] },
 );
 

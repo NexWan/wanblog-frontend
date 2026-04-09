@@ -141,8 +141,8 @@ export async function publishDraftAssets(blogId: string, draftMarkdown: string) 
         destination: { path: publishedPath, bucket: BLOG_STORAGE_BUCKET },
       });
       pathMap.set(draftPath, publishedPath);
-    } catch {
-      // Source may not exist; keep the original path rather than breaking publish
+    } catch (err) {
+      console.error(`[publishDraftAssets] Failed to copy ${draftPath} → ${publishedPath}:`, err);
       pathMap.set(draftPath, draftPath);
     }
   }
@@ -187,7 +187,8 @@ export async function resolveMarkdownAmplifyImages(markdown: string) {
     try {
       const { url } = await resolveAmplifyImageUrl(path);
       resolvedMarkdown = resolvedMarkdown.replaceAll(`${AMPLIFY_IMAGE_PROTOCOL}${path}`, url);
-    } catch {
+    } catch (err) {
+      console.warn(`[resolveMarkdownAmplifyImages] Could not resolve amplify path: ${path}`, err);
       // Leave the amplify:// reference intact; the img will show as broken
     }
   }
