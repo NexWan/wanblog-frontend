@@ -26,29 +26,64 @@ type ProfileClient = {
 
 const client = generateClient() as unknown as ProfileClient;
 
-async function isUsernameTaken(username: string): Promise<boolean> {
+function isConditionalRequestFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.toLowerCase().includes("conditional request failed");
+}
+
+function isSameProfile(profile: UserProfile, input: CreateProfileInput): boolean {
+  return profile.userId === input.userId && profile.username === input.username;
+}
+
+async function getProfileByUsernamePublic(username: string): Promise<UserProfile | null> {
   const { data } = await client.models.UserProfile.getUserProfileByUsername(
     { username },
     { authMode: "apiKey" }
   );
-  return data.length > 0;
+  return (data[0] as UserProfile) ?? null;
+}
+
+async function getExistingProfile(input: CreateProfileInput): Promise<UserProfile | null> {
+  const byUserId = await getProfileByUserIdPublic(input.userId);
+  if (byUserId) return byUserId;
+
+  return getProfileByUsernamePublic(input.username);
 }
 
 export async function createProfile(input: CreateProfileInput): Promise<UserProfile> {
-  const taken = await isUsernameTaken(input.username);
-  if (taken) throw new Error("Username is already taken.");
-
-  const { data, errors } = await client.models.UserProfile.create(input, {
-    authMode: "userPool",
-  });
-
-  if (errors?.length) {
-    throw new Error(errors.map((e) => e.message).join(", "));
+  const existing = await getExistingProfile(input);
+  if (existing) {
+    if (isSameProfile(existing, input)) return existing;
+    if (existing.userId === input.userId) {
+      throw new Error("A profile already exists for this account.");
+    }
+    throw new Error("Username is already taken.");
   }
 
-  if (!data) throw new Error("No data returned from createProfile");
+  try {
+    const { data, errors } = await client.models.UserProfile.create(input, {
+      authMode: "userPool",
+    });
 
-  return data as UserProfile;
+    if (errors?.length) {
+      const message = errors.map((e) => e.message).join(", ");
+      if (message.toLowerCase().includes("conditional request failed")) {
+        const profile = await getExistingProfile(input);
+        if (profile && isSameProfile(profile, input)) return profile;
+      }
+      throw new Error(message);
+    }
+
+    if (!data) throw new Error("No data returned from createProfile");
+
+    return data as UserProfile;
+  } catch (error) {
+    if (isConditionalRequestFailure(error)) {
+      const profile = await getExistingProfile(input);
+      if (profile && isSameProfile(profile, input)) return profile;
+    }
+    throw error;
+  }
 }
 
 export async function updateProfile(input: UpdateProfileInput): Promise<UserProfile> {
