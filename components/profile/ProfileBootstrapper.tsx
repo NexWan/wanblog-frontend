@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { startTransition, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { revalidateProfileCache } from "@/app/actions/revalidate";
 import { createProfile } from "@/lib/profile-data";
 
 type ProfileBootstrapperProps = {
@@ -12,15 +13,39 @@ type ProfileBootstrapperProps = {
 
 export default function ProfileBootstrapper({ userId, username, displayName }: ProfileBootstrapperProps) {
   const router = useRouter();
+  const didStart = useRef(false);
+  const isMounted = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    createProfile({ userId, username, displayName })
-      .then(() => router.push(`/user/${username}`))
-      .catch((err) => {
+    isMounted.current = true;
+
+    async function bootstrapProfile() {
+      try {
+        const profile = await createProfile({ userId, username, displayName });
+        await revalidateProfileCache(profile.userId, profile.username).catch((err) =>
+          console.warn("Profile cache revalidation failed (non-critical):", err),
+        );
+
+        if (!isMounted.current) return;
+
+        startTransition(() => {
+          router.refresh();
+          router.replace(`/user/${username}`);
+        });
+      } catch (err) {
+        if (!isMounted.current) return;
         console.error("createProfile failed", err);
         setError(err instanceof Error ? err.message : "Failed to create profile.");
-      });
+      }
+    }
+
+    if (!didStart.current) {
+      didStart.current = true;
+      bootstrapProfile();
+    }
+
+    return () => { isMounted.current = false; };
   }, [userId, username, displayName, router]);
 
   if (error) {
